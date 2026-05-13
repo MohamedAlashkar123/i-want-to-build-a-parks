@@ -1,4 +1,4 @@
-import { AlertTriangle, Database, MapPinned } from 'lucide-react';
+import { AlertTriangle, MapPinned } from 'lucide-react';
 import type { ParkRecord } from '../types/park';
 import {
   getDmtIntegratedSmartParksCount,
@@ -76,21 +76,6 @@ export default function ExecutiveSidePanel({ parks }: ExecutiveSidePanelProps) {
           </div>
         </div>
 
-        <div className="border-t border-white/10 pt-4">
-          <div className="mb-3 flex items-center gap-2">
-            <Database className="h-4 w-4 text-cyan-100" aria-hidden="true" />
-            <h3 className="text-sm font-semibold text-white">Data Availability</h3>
-          </div>
-          <ul className="list-disc space-y-1.5 pl-4 text-xs leading-5 text-slate-300 marker:text-cyan-300">
-            <li>Confirmed smart parks are based on project-team confirmation and provided coordinates, not inferred from the Excel inventory.</li>
-            <li>AI visitor counting camera data is available for 5 of the 6 confirmed smart parks. Corniche Park is a confirmed smart park but has no CCTV visitor counting cameras.</li>
-            <li>No crowd detection, vandalism detection, facial recognition, or other AI capabilities are included in the current dataset.</li>
-            <li>No operational camera status or actual coverage percentage.</li>
-            <li>X/Y coordinates require CRS/EPSG confirmation.</li>
-            <li>Some coordinates were excluded pending GIS validation.</li>
-            <li>English park names are missing from the current dataset.</li>
-          </ul>
-        </div>
       </section>
     </aside>
   );

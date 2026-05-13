@@ -41,25 +41,25 @@ export default function SmartParksByMunicipalityCard({ parks, isLoading = false,
         </span>
       </div>
 
-      <div className={`mt-4 grid gap-3 ${compact ? '' : 'lg:grid-cols-[160px_minmax(0,1fr)] lg:items-center'}`}>
+      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <div className="rounded-xl border border-violet-300/20 bg-violet-300/10 p-3">
           <p className="text-xs text-violet-100">Confirmed Smart Parks</p>
           <p className="mt-1 text-3xl font-bold text-white">{isLoading ? '-' : formatNumber(total)}</p>
         </div>
 
-        <div className="grid gap-2 sm:grid-cols-3">
-          {[
-            ['With AI Visitor Counting', visitorCountingParks],
-            ['Without AI Visitor Counting', withoutAiVisitorCounting],
-            ['AI Visitor Cameras', visitorCountingCameras],
-          ].map(([label, value]) => (
-            <div key={label} className="rounded-xl border border-white/10 bg-slate-950/70 p-3">
-              <p className="truncate text-xs text-slate-500">{label}</p>
-              <p className="mt-1 text-xl font-bold text-white">{isLoading ? '-' : formatNumber(Number(value))}</p>
-            </div>
-          ))}
-        </div>
+        {[
+          ['AI Visitor Counting Parks', visitorCountingParks],
+          ['AI Visitor Counting Cameras', visitorCountingCameras],
+          ['Without Visitor Counting', withoutAiVisitorCounting],
+        ].map(([label, value]) => (
+          <div key={label} className="rounded-xl border border-white/10 bg-slate-950/70 p-3">
+            <p className="text-xs text-slate-500">{label}</p>
+            <p className="mt-1 text-3xl font-bold text-white">{isLoading ? '-' : formatNumber(Number(value))}</p>
+          </div>
+        ))}
+      </div>
 
+      <div className={`mt-4 ${compact ? 'space-y-2' : 'grid gap-3 lg:grid-cols-[180px_minmax(0,1fr)] lg:items-start'}`}>
         <div className="space-y-2">
           {rows.map((row) => (
             <div key={row.municipality} className="grid grid-cols-[48px_minmax(0,1fr)_32px] items-center gap-3 text-xs">
@@ -74,9 +74,8 @@ export default function SmartParksByMunicipalityCard({ parks, isLoading = false,
             </div>
           ))}
         </div>
-      </div>
 
-      <div className="mt-4 max-w-full overflow-x-auto rounded-xl border border-white/10">
+      <div className="max-w-full overflow-x-auto rounded-xl border border-white/10">
         <table className="w-full min-w-[760px] border-collapse text-left text-xs">
           <thead className="bg-slate-950 text-slate-300">
             <tr>
@@ -100,11 +99,20 @@ export default function SmartParksByMunicipalityCard({ parks, isLoading = false,
                 <td className="whitespace-nowrap px-3 py-2 text-slate-100">
                   {formatNumber(smartPark.aiVisitorCountingCameraCount)}
                 </td>
-                <td className="whitespace-nowrap px-3 py-2 text-slate-400">{smartPark.smartParkNote || '-'}</td>
+                <td className="whitespace-nowrap px-3 py-2">
+                  {smartPark.smartParkNote ? (
+                    <span className="rounded-full border border-amber-300/25 bg-amber-300/10 px-2 py-1 font-semibold text-amber-100">
+                      {smartPark.smartParkNote}
+                    </span>
+                  ) : (
+                    <span className="text-slate-500">-</span>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
+      </div>
       </div>
 
       {!compact && (

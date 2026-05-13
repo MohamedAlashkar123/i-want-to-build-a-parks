@@ -10,6 +10,7 @@ type CollapsibleSectionProps = {
   actions?: ReactNode;
   showText?: string;
   hideText?: string;
+  hideToggle?: boolean;
 };
 
 export default function CollapsibleSection({
@@ -21,6 +22,7 @@ export default function CollapsibleSection({
   actions,
   showText = 'Show table',
   hideText = 'Hide table',
+  hideToggle = false,
 }: CollapsibleSectionProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
@@ -33,15 +35,17 @@ export default function CollapsibleSection({
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
           {actions}
-          <button
-            className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-xs font-semibold text-slate-200 transition hover:border-cyan-300/40 hover:text-white"
-            type="button"
-            onClick={() => setIsOpen((current) => !current)}
-            aria-expanded={isOpen}
-          >
-            {isOpen ? <ChevronUp className="h-4 w-4" aria-hidden="true" /> : <ChevronDown className="h-4 w-4" aria-hidden="true" />}
-            {isOpen ? hideText : showText}
-          </button>
+          {!hideToggle && (
+            <button
+              className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-xs font-semibold text-slate-200 transition hover:border-cyan-300/40 hover:text-white"
+              type="button"
+              onClick={() => setIsOpen((current) => !current)}
+              aria-expanded={isOpen}
+            >
+              {isOpen ? <ChevronUp className="h-4 w-4" aria-hidden="true" /> : <ChevronDown className="h-4 w-4" aria-hidden="true" />}
+              {isOpen ? hideText : showText}
+            </button>
+          )}
         </div>
       </div>
 

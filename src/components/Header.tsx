@@ -17,13 +17,13 @@ export default function Header() {
               Parks CCTV & Smart Parks Executive Dashboard
             </h1>
             <p className="mt-0.5 truncate text-xs text-slate-300 lg:text-sm">
-              Executive overview of CCTV availability, GIS readiness, confirmed smart parks, and priority gaps across public parks.
+              CCTV availability, GIS readiness, confirmed smart parks, and priority gaps across public parks.
             </p>
           </div>
         </div>
 
         <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
-          {['CCTV Inventory', 'GIS Readiness', 'Smart Parks', 'DMT Smart Parks: Integrated'].map((badge) => (
+          {['Executive Dashboard', 'DMT Smart Parks: Integrated'].map((badge) => (
             <span
               key={badge}
               className="rounded-full border border-cyan-300/15 bg-cyan-300/10 px-3 py-1 text-[11px] font-semibold text-cyan-50"

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import ChartsPanel from './components/ChartsPanel';
+import DataNotesCard from './components/DataNotesCard';
 import ExecutiveMapboxMap from './components/ExecutiveMapboxMap';
 import ExecutiveSidePanel from './components/ExecutiveSidePanel';
 import GisConversionReadiness from './components/GisConversionReadiness';
@@ -63,9 +64,11 @@ export default function App() {
           <ExecutiveSidePanel parks={normalizedParksState.parks} />
         </section>
 
+        <SmartParksByMunicipalityCard parks={normalizedParksState.parks} isLoading={normalizedParksState.isLoading} />
+
         <ChartsPanel parks={normalizedParksState.parks} />
 
-        <SmartParksByMunicipalityCard parks={normalizedParksState.parks} isLoading={normalizedParksState.isLoading} />
+        <DataNotesCard />
 
         <MunicipalitySummaryTable parks={normalizedParksState.parks} isLoading={normalizedParksState.isLoading} />
 

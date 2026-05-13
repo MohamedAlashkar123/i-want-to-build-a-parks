@@ -86,6 +86,8 @@ export function getBalancedTopPriorityGaps(gaps: GapAnalysisRecord[]): GapAnalys
 
 export default function TopPriorityGaps({ parks, isLoading = false }: TopPriorityGapsProps) {
   const [municipality, setMunicipality] = useState<MunicipalityFilter>('All');
+  const [showFullTable, setShowFullTable] = useState(false);
+  const [showTable, setShowTable] = useState(true);
   const allGaps = useMemo(() => generateGapAnalysis(parks), [parks]);
   const filteredGaps = useMemo(() => {
     return allGaps.filter((gap) => municipality === 'All' || gap.municipality === municipality);
@@ -107,12 +109,14 @@ export default function TopPriorityGaps({ parks, isLoading = false }: TopPriorit
     ['GIS gaps', gisGapsCount],
     ['Integration gaps', integrationGapsCount],
   ];
+  const visibleGaps = showFullTable ? gaps : gaps.slice(0, 5);
 
   return (
     <CollapsibleSection
       title="Top 10 Priority Gaps"
       subtitle="Highest-priority generated gaps for executive follow-up."
       defaultOpen
+      hideToggle
       actions={
         <>
           <label className="flex items-center gap-2 text-sm text-slate-300">
@@ -131,6 +135,21 @@ export default function TopPriorityGaps({ parks, isLoading = false }: TopPriorit
           <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-amber-300/20 bg-amber-300/10 text-amber-100">
             <ListChecks className="h-5 w-5" aria-hidden="true" />
           </span>
+          <button
+            className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-xs font-semibold text-slate-200 transition hover:border-cyan-300/40 hover:text-white"
+            type="button"
+            onClick={() => {
+              if (showFullTable) {
+                setShowTable(false);
+                setShowFullTable(false);
+              } else {
+                setShowTable(true);
+                setShowFullTable(true);
+              }
+            }}
+          >
+            {showFullTable ? 'Hide table' : 'Show full table'}
+          </button>
         </>
       }
       summaryContent={
@@ -150,6 +169,7 @@ export default function TopPriorityGaps({ parks, isLoading = false }: TopPriorit
         </>
       }
     >
+      {showTable && (
       <div className="max-w-full overflow-x-auto rounded-xl border border-white/10">
         <table className="w-full min-w-[980px] border-collapse text-left text-sm">
           <thead className="bg-slate-950 text-slate-300">
@@ -172,7 +192,7 @@ export default function TopPriorityGaps({ parks, isLoading = false }: TopPriorit
             )}
 
             {!isLoading &&
-              gaps.map((gap) => (
+              visibleGaps.map((gap) => (
                 <tr key={gap.id} className="align-top hover:bg-white/[0.03]">
                   <td className="whitespace-nowrap px-4 py-3 text-slate-100">{gap.municipality}</td>
                   <td className="max-w-[220px] truncate px-4 py-3 text-slate-100" title={gap.parkName}>
@@ -191,7 +211,7 @@ export default function TopPriorityGaps({ parks, isLoading = false }: TopPriorit
                 </tr>
               ))}
 
-            {!isLoading && gaps.length === 0 && (
+            {!isLoading && visibleGaps.length === 0 && (
               <tr>
                 <td className="px-4 py-8 text-center text-slate-500" colSpan={6}>
                   No priority gaps are available.
@@ -201,6 +221,7 @@ export default function TopPriorityGaps({ parks, isLoading = false }: TopPriorit
           </tbody>
         </table>
       </div>
+      )}
     </CollapsibleSection>
   );
 }
