@@ -1,10 +1,11 @@
 import { AlertTriangle, Database, MapPinned } from 'lucide-react';
 import type { ParkRecord } from '../types/park';
 import {
-  getParksWithoutCctv,
+  getDmtIntegratedSmartParksCount,
   getSmartParksCount,
-  getStandaloneCameraSetupCount,
+  getSmartParksWithVisitorCountingCount,
   getTotalParks,
+  getTotalVisitorCountingCameras,
 } from '../utils/dashboardCalculations';
 
 type ExecutiveSidePanelProps = {
@@ -19,20 +20,12 @@ export default function ExecutiveSidePanel({ parks }: ExecutiveSidePanelProps) {
     (park) => park.coordinateSource === 'Google Maps' && park.canPlotOnMap && park.gisValidationStatus !== 'Needs Review' && park.gisValidationStatus !== 'Suspicious',
   ).length;
   const projectedXy = parks.filter((park) => park.coordinateSource === 'Projected XY').length;
-  const missingInvalid = parks.filter(
-    (park) =>
-      !park.canPlotOnMap &&
-      (park.coordinateConversionStatus === 'Missing' ||
-        park.coordinateConversionStatus === 'Invalid' ||
-        park.coordinateSource === 'Missing' ||
-        park.coordinateSource === 'Unknown'),
-  ).length;
   const gisReadyPercent = totalParks === 0 ? 0 : (validGis / totalParks) * 100;
   const insights = [
-    ['Parks without CCTV', getParksWithoutCctv(parks)],
-    ['Missing/invalid GIS', missingInvalid],
-    ['Standalone systems', getStandaloneCameraSetupCount(parks)],
-    ['Smart parks', getSmartParksCount(parks)],
+    ['Confirmed smart parks', getSmartParksCount(parks)],
+    ['AI visitor counting parks', getSmartParksWithVisitorCountingCount(parks)],
+    ['AI visitor counting cameras', getTotalVisitorCountingCameras(parks)],
+    ['DMT integrated smart parks', getDmtIntegratedSmartParksCount(parks)],
   ];
 
   return (
@@ -51,8 +44,8 @@ export default function ExecutiveSidePanel({ parks }: ExecutiveSidePanelProps) {
               </div>
             ))}
           </div>
-          <p className="mt-2 rounded-lg border border-amber-300/20 bg-amber-300/10 px-3 py-2 text-xs font-semibold leading-5 text-amber-50">
-            Current camera systems are standalone and not integrated with DMT systems.
+          <p className="mt-2 rounded-lg border border-cyan-300/20 bg-cyan-300/10 px-3 py-2 text-xs font-semibold leading-5 text-cyan-50">
+            Confirmed smart parks are integrated with DMT systems. Integration status for remaining CCTV inventory parks is not confirmed in the current dataset.
           </p>
         </div>
 
@@ -90,8 +83,8 @@ export default function ExecutiveSidePanel({ parks }: ExecutiveSidePanelProps) {
           </div>
           <ul className="list-disc space-y-1.5 pl-4 text-xs leading-5 text-slate-300 marker:text-cyan-300">
             <li>Confirmed smart parks are based on project-team confirmation and provided coordinates, not inferred from the Excel inventory.</li>
-            <li>Visitor counting CCTV data is available for the 6 confirmed smart parks based on project-team input.</li>
-            <li>No AI analytics or advanced video analytics in the current dataset.</li>
+            <li>AI visitor counting camera data is available for 5 of the 6 confirmed smart parks. Corniche Park is a confirmed smart park but has no CCTV visitor counting cameras.</li>
+            <li>No crowd detection, vandalism detection, facial recognition, or other AI capabilities are included in the current dataset.</li>
             <li>No operational camera status or actual coverage percentage.</li>
             <li>X/Y coordinates require CRS/EPSG confirmation.</li>
             <li>Some coordinates were excluded pending GIS validation.</li>

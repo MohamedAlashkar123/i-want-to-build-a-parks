@@ -1,13 +1,15 @@
-import { Camera, Cpu, Link2Off, MapPinned, Percent, Trees } from 'lucide-react';
+import { Bot, Camera, Cpu, Link, MapPinned, Percent, Trees } from 'lucide-react';
 import type { ParkRecord } from '../types/park';
 import {
   getCctvParkPercentage,
-  getDmtIntegratedParks,
+  getDmtIntegratedSmartParksCount,
   getParksWithCctv,
   getParksWithoutCctv,
   getSmartParksCount,
+  getSmartParksWithVisitorCountingCount,
   getTotalCameras,
   getTotalParks,
+  getTotalVisitorCountingCameras,
 } from '../utils/dashboardCalculations';
 
 type KpiCardsProps = {
@@ -52,19 +54,29 @@ export default function KpiCards({ parks, isLoading = false }: KpiCardsProps) {
       icon: Percent,
     },
     {
-      label: 'DMT Integration',
-      value: formatNumber(getDmtIntegratedParks(parks)),
-      icon: Link2Off,
-    },
-    {
       label: 'Smart Parks',
       value: formatNumber(getSmartParksCount(parks)),
       icon: Cpu,
     },
+    {
+      label: 'AI Visitor Parks',
+      value: formatNumber(getSmartParksWithVisitorCountingCount(parks)),
+      icon: Bot,
+    },
+    {
+      label: 'AI Visitor Cameras',
+      value: formatNumber(getTotalVisitorCountingCameras(parks)),
+      icon: Camera,
+    },
+    {
+      label: 'DMT Smart Parks',
+      value: formatNumber(getDmtIntegratedSmartParksCount(parks)),
+      icon: Link,
+    },
   ];
 
   return (
-    <section className="grid max-w-full grid-cols-2 gap-3 md:grid-cols-4 2xl:grid-cols-7">
+    <section className="grid max-w-full grid-cols-2 gap-3 md:grid-cols-4 2xl:grid-cols-9">
       {kpis.map((kpi) => {
         const Icon = kpi.icon;
 

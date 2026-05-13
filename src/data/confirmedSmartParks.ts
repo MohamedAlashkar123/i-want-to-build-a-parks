@@ -6,6 +6,10 @@ export type ConfirmedSmartPark = {
   smartParkNameAr?: string;
   aliases: string[];
   capabilities: string[];
+  isSmartPark: true;
+  dmtIntegrationStatus: 'Integrated';
+  dmtIntegrationConfirmed: true;
+  dmtIntegrationScope: 'Smart Parks Platform / DMT systems';
   smartSystemAvailable: true;
   hasSensors: true;
   hasCameras: true;
@@ -14,13 +18,14 @@ export type ConfirmedSmartPark = {
   latitude?: number;
   longitude?: number;
   coordinateStatus?: 'Provided' | 'Pending' | 'Matched from Excel' | 'Needs CRS Conversion';
-  visitorCountingCapability: true;
-  visitorCountingMethod: 'CCTV Cam';
-  visitorCountingCameraCount: number;
-  visitorCountingNote?: string;
+  aiVisitorCountingAvailable: boolean;
+  aiVisitorCountingCameraCount: number;
+  aiVisitorCountingMethod?: 'CCTV Cam';
+  smartParkNote?: string;
 };
 
-const smartParkCapabilities = ['Cameras', 'Sensors', 'Smart sensor management system'];
+const smartParkCapabilities = ['Sensors', 'Smart sensor management system'];
+const dmtIntegrationScope = 'Smart Parks Platform / DMT systems';
 
 export const confirmedSmartParks: ConfirmedSmartPark[] = [
   {
@@ -29,15 +34,19 @@ export const confirmedSmartParks: ConfirmedSmartPark[] = [
     smartParkNameAr: 'حديقة دالما',
     aliases: ['Dalma Park', 'حديقة دالما', 'حديقة دلما', 'Delma Park'],
     capabilities: smartParkCapabilities,
+    isSmartPark: true,
+    dmtIntegrationStatus: 'Integrated',
+    dmtIntegrationConfirmed: true,
+    dmtIntegrationScope,
     smartSystemAvailable: true,
     hasSensors: true,
     hasCameras: true,
     latitude: 24.4686,
     longitude: 54.3631,
     coordinateStatus: 'Provided',
-    visitorCountingCapability: true,
-    visitorCountingMethod: 'CCTV Cam',
-    visitorCountingCameraCount: 30,
+    aiVisitorCountingAvailable: true,
+    aiVisitorCountingMethod: 'CCTV Cam',
+    aiVisitorCountingCameraCount: 30,
   },
   {
     municipality: 'ADM',
@@ -45,16 +54,19 @@ export const confirmedSmartParks: ConfirmedSmartPark[] = [
     smartParkNameAr: 'حديقة الكورنيش',
     aliases: ['Corniche Park', 'Corniche Beach Park', 'حديقة الكورنيش', 'حديقة شاطئ الكورنيش'],
     capabilities: smartParkCapabilities,
+    isSmartPark: true,
+    dmtIntegrationStatus: 'Integrated',
+    dmtIntegrationConfirmed: true,
+    dmtIntegrationScope,
     smartSystemAvailable: true,
     hasSensors: true,
     hasCameras: true,
     latitude: 24.4762,
     longitude: 54.3573,
     coordinateStatus: 'Provided',
-    visitorCountingCapability: true,
-    visitorCountingMethod: 'CCTV Cam',
-    visitorCountingCameraCount: 0,
-    visitorCountingNote: 'No CCTV Cameras',
+    aiVisitorCountingAvailable: false,
+    aiVisitorCountingCameraCount: 0,
+    smartParkNote: 'No CCTV visitor counting cameras',
   },
   {
     municipality: 'ADM',
@@ -62,15 +74,19 @@ export const confirmedSmartParks: ConfirmedSmartPark[] = [
     smartParkNameAr: 'حديقة العائلة B',
     aliases: ['Family Park B', 'حديقة العائلة B', 'حديقة العائلة ب', 'حديقة العائلة - ب'],
     capabilities: smartParkCapabilities,
+    isSmartPark: true,
+    dmtIntegrationStatus: 'Integrated',
+    dmtIntegrationConfirmed: true,
+    dmtIntegrationScope,
     smartSystemAvailable: true,
     hasSensors: true,
     hasCameras: true,
     latitude: 24.4697,
     longitude: 54.3499,
     coordinateStatus: 'Provided',
-    visitorCountingCapability: true,
-    visitorCountingMethod: 'CCTV Cam',
-    visitorCountingCameraCount: 41,
+    aiVisitorCountingAvailable: true,
+    aiVisitorCountingMethod: 'CCTV Cam',
+    aiVisitorCountingCameraCount: 41,
   },
   {
     municipality: 'AAM',
@@ -78,15 +94,19 @@ export const confirmedSmartParks: ConfirmedSmartPark[] = [
     smartParkNameAr: 'حديقة الجاهلي',
     aliases: ['Al Jahili Park', 'حديقة الجاهلي'],
     capabilities: smartParkCapabilities,
+    isSmartPark: true,
+    dmtIntegrationStatus: 'Integrated',
+    dmtIntegrationConfirmed: true,
+    dmtIntegrationScope,
     smartSystemAvailable: true,
     hasSensors: true,
     hasCameras: true,
     latitude: 24.2194,
     longitude: 55.7606,
     coordinateStatus: 'Provided',
-    visitorCountingCapability: true,
-    visitorCountingMethod: 'CCTV Cam',
-    visitorCountingCameraCount: 50,
+    aiVisitorCountingAvailable: true,
+    aiVisitorCountingMethod: 'CCTV Cam',
+    aiVisitorCountingCameraCount: 50,
   },
   {
     municipality: 'AAM',
@@ -94,15 +114,19 @@ export const confirmedSmartParks: ConfirmedSmartPark[] = [
     smartParkNameAr: 'حديقة الطوية',
     aliases: ['Al Towayya Park', 'حديقة الطوية', 'Al Towayya'],
     capabilities: smartParkCapabilities,
+    isSmartPark: true,
+    dmtIntegrationStatus: 'Integrated',
+    dmtIntegrationConfirmed: true,
+    dmtIntegrationScope,
     smartSystemAvailable: true,
     hasSensors: true,
     hasCameras: true,
     latitude: 24.1917,
     longitude: 55.7422,
     coordinateStatus: 'Provided',
-    visitorCountingCapability: true,
-    visitorCountingMethod: 'CCTV Cam',
-    visitorCountingCameraCount: 45,
+    aiVisitorCountingAvailable: true,
+    aiVisitorCountingMethod: 'CCTV Cam',
+    aiVisitorCountingCameraCount: 45,
   },
   {
     municipality: 'DRM',
@@ -117,15 +141,19 @@ export const confirmedSmartParks: ConfirmedSmartPark[] = [
       'Sheikha Salama Park',
     ],
     capabilities: smartParkCapabilities,
+    isSmartPark: true,
+    dmtIntegrationStatus: 'Integrated',
+    dmtIntegrationConfirmed: true,
+    dmtIntegrationScope,
     smartSystemAvailable: true,
     hasSensors: true,
     hasCameras: true,
     latitude: 23.6549,
     longitude: 53.7058,
     coordinateStatus: 'Provided',
-    visitorCountingCapability: true,
-    visitorCountingMethod: 'CCTV Cam',
-    visitorCountingCameraCount: 36,
+    aiVisitorCountingAvailable: true,
+    aiVisitorCountingMethod: 'CCTV Cam',
+    aiVisitorCountingCameraCount: 36,
   },
 ];
 
@@ -189,10 +217,13 @@ export function enrichWithConfirmedSmartPark(park: ParkRecord): ParkRecord {
     smartParkCapabilities: smartPark.capabilities,
     smartSystemAvailable: smartPark.smartSystemAvailable,
     hasSensors: smartPark.hasSensors,
-    visitorCountingCapability: smartPark.visitorCountingCapability,
-    visitorCountingMethod: smartPark.visitorCountingMethod,
-    visitorCountingCameraCount: smartPark.visitorCountingCameraCount,
-    visitorCountingNote: smartPark.visitorCountingNote,
+    dmtIntegrationStatus: smartPark.dmtIntegrationStatus,
+    dmtIntegrationConfirmed: smartPark.dmtIntegrationConfirmed,
+    dmtIntegrationScope: smartPark.dmtIntegrationScope,
+    aiVisitorCountingAvailable: smartPark.aiVisitorCountingAvailable,
+    aiVisitorCountingMethod: smartPark.aiVisitorCountingMethod,
+    aiVisitorCountingCameraCount: smartPark.aiVisitorCountingCameraCount,
+    smartParkNote: smartPark.smartParkNote,
     coordinateSource: !hasUsableExcelCoordinates && hasProvidedCoordinates ? 'Confirmed Smart Park Coordinates' : park.coordinateSource,
     coordinateConversionStatus: !hasUsableExcelCoordinates && hasProvidedCoordinates ? 'Ready for Map' : park.coordinateConversionStatus,
     canPlotOnMap: hasUsableExcelCoordinates || hasProvidedCoordinates ? true : park.canPlotOnMap,

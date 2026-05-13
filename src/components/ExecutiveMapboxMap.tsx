@@ -167,22 +167,22 @@ function createPopupContent(park: PlottedPark): HTMLElement {
   rows.appendChild(createPopupRow('Total Cameras', formatNumber(park.totalCameras)));
   rows.appendChild(createPopupRow('Maintenance', createStatusBadge(park.hasMaintenanceContract, true)));
   rows.appendChild(createPopupRow('Smart Park', park.isSmartPark ? createStatusBadge('Yes') : '-'));
-  rows.appendChild(createPopupRow('DMT Integration', 'Not Integrated'));
+  rows.appendChild(createPopupRow('DMT Integration', park.isSmartPark ? 'Integrated' : 'Not confirmed'));
   rows.appendChild(createPopupRow('Camera Setup', 'Standalone'));
   rows.appendChild(createPopupRow('Park Type', formatOptional(park.parkType)));
   rows.appendChild(createPopupRow('Maintenance Company', formatOptional(park.maintenanceCompany)));
 
   if (park.isSmartPark) {
     rows.appendChild(createPopupRow('Capabilities', formatOptional(park.smartParkCapabilities?.join(', '))));
-    rows.appendChild(createPopupRow('Visitor Counting', formatOptional(park.visitorCountingMethod)));
+    rows.appendChild(createPopupRow('AI Visitor Counting', park.aiVisitorCountingAvailable ? 'Yes' : 'No'));
     rows.appendChild(
       createPopupRow(
-        'Visitor CCTV Cameras',
-        typeof park.visitorCountingCameraCount === 'number' ? formatNumber(park.visitorCountingCameraCount) : '-',
+        'AI Visitor Cameras',
+        typeof park.aiVisitorCountingCameraCount === 'number' ? formatNumber(park.aiVisitorCountingCameraCount) : '-',
       ),
     );
-    if (park.visitorCountingNote) {
-      rows.appendChild(createPopupRow('Visitor Counting Note', park.visitorCountingNote));
+    if (park.smartParkNote) {
+      rows.appendChild(createPopupRow('Note', park.smartParkNote));
     }
   }
 

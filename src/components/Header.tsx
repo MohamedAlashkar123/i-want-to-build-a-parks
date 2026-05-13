@@ -23,7 +23,7 @@ export default function Header() {
         </div>
 
         <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
-          {['CCTV Inventory', 'GIS Readiness', 'Smart Parks', 'DMT Integration: Not Integrated'].map((badge) => (
+          {['CCTV Inventory', 'GIS Readiness', 'Smart Parks', 'DMT Smart Parks: Integrated'].map((badge) => (
             <span
               key={badge}
               className="rounded-full border border-cyan-300/15 bg-cyan-300/10 px-3 py-1 text-[11px] font-semibold text-cyan-50"

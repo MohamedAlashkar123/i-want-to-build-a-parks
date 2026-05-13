@@ -24,16 +24,16 @@ export default function SmartParksByMunicipalityCard({ parks, isLoading = false,
   const total = getSmartParksCount(parks);
   const visitorCountingParks = getSmartParksWithVisitorCountingCount(parks);
   const visitorCountingCameras = getTotalVisitorCountingCameras(parks);
-  const noVisitorCountingCctv = getSmartParksWithoutVisitorCountingCctvCount(parks);
+  const withoutAiVisitorCounting = getSmartParksWithoutVisitorCountingCctvCount(parks);
   const maxValue = Math.max(1, ...rows.map((row) => row.smartParks));
 
   return (
     <section className="h-full overflow-hidden rounded-2xl border border-white/10 bg-slate-900/75 p-4 shadow-xl shadow-black/20">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-base font-semibold text-white">Confirmed Smart Parks Capabilities</h2>
+          <h2 className="text-base font-semibold text-white">Smart Parks & AI Visitor Counting</h2>
           <p className="mt-1 text-xs leading-5 text-slate-400">
-            Visitor counting CCTV capability based on project-team input.
+            AI visitor counting CCTV capability based on project-team input.
           </p>
         </div>
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-violet-300/20 bg-violet-300/10 text-violet-100">
@@ -49,9 +49,9 @@ export default function SmartParksByMunicipalityCard({ parks, isLoading = false,
 
         <div className="grid gap-2 sm:grid-cols-3">
           {[
-            ['Visitor Counting', visitorCountingParks],
-            ['Visitor CCTV Cameras', visitorCountingCameras],
-            ['No Visitor CCTV', noVisitorCountingCctv],
+            ['With AI Visitor Counting', visitorCountingParks],
+            ['Without AI Visitor Counting', withoutAiVisitorCounting],
+            ['AI Visitor Cameras', visitorCountingCameras],
           ].map(([label, value]) => (
             <div key={label} className="rounded-xl border border-white/10 bg-slate-950/70 p-3">
               <p className="truncate text-xs text-slate-500">{label}</p>
@@ -82,8 +82,9 @@ export default function SmartParksByMunicipalityCard({ parks, isLoading = false,
             <tr>
               <th className="whitespace-nowrap px-3 py-2 font-semibold">Smart Park</th>
               <th className="whitespace-nowrap px-3 py-2 font-semibold">Municipality</th>
-              <th className="whitespace-nowrap px-3 py-2 font-semibold">Visitor Counting</th>
-              <th className="whitespace-nowrap px-3 py-2 font-semibold">CCTV Cam Count</th>
+              <th className="whitespace-nowrap px-3 py-2 font-semibold">DMT Integration</th>
+              <th className="whitespace-nowrap px-3 py-2 font-semibold">AI Visitor Counting</th>
+              <th className="whitespace-nowrap px-3 py-2 font-semibold">AI Visitor Counting Cameras</th>
               <th className="whitespace-nowrap px-3 py-2 font-semibold">Note</th>
             </tr>
           </thead>
@@ -92,11 +93,14 @@ export default function SmartParksByMunicipalityCard({ parks, isLoading = false,
               <tr key={`${smartPark.municipality}-${smartPark.smartParkNameEn}`} className="hover:bg-white/[0.03]">
                 <td className="whitespace-nowrap px-3 py-2 font-semibold text-white">{smartPark.smartParkNameEn}</td>
                 <td className="whitespace-nowrap px-3 py-2 text-slate-300">{smartPark.municipality}</td>
-                <td className="whitespace-nowrap px-3 py-2 text-emerald-100">{smartPark.visitorCountingMethod}</td>
+                <td className="whitespace-nowrap px-3 py-2 text-emerald-100">{smartPark.dmtIntegrationStatus}</td>
                 <td className="whitespace-nowrap px-3 py-2 text-slate-100">
-                  {formatNumber(smartPark.visitorCountingCameraCount)}
+                  {smartPark.aiVisitorCountingAvailable ? 'Yes' : 'No'}
                 </td>
-                <td className="whitespace-nowrap px-3 py-2 text-slate-400">{smartPark.visitorCountingNote || '-'}</td>
+                <td className="whitespace-nowrap px-3 py-2 text-slate-100">
+                  {formatNumber(smartPark.aiVisitorCountingCameraCount)}
+                </td>
+                <td className="whitespace-nowrap px-3 py-2 text-slate-400">{smartPark.smartParkNote || '-'}</td>
               </tr>
             ))}
           </tbody>

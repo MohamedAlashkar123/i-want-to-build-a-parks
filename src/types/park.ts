@@ -31,9 +31,11 @@ export interface ParkRecord {
   smartParkCapabilities?: string[];
   smartSystemAvailable?: boolean;
   hasSensors?: boolean;
-  visitorCountingCapability?: boolean;
-  visitorCountingMethod?: string;
-  visitorCountingCameraCount?: number;
-  visitorCountingNote?: string;
+  dmtIntegrationConfirmed?: boolean;
+  dmtIntegrationScope?: string;
+  aiVisitorCountingAvailable?: boolean;
+  aiVisitorCountingCameraCount?: number;
+  aiVisitorCountingMethod?: string;
+  smartParkNote?: string;
   dataQualityIssues: string[];
 }
