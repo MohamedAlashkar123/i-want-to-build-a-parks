@@ -11,7 +11,7 @@ export interface ParkRecord {
   supervisorEntity?: string;
   locationText?: string;
   coordinateRaw?: string;
-  coordinateSource?: 'Google Maps' | 'LatLng Text' | 'Projected XY' | 'Missing' | 'Unknown';
+  coordinateSource?: 'Google Maps' | 'LatLng Text' | 'Projected XY' | 'Confirmed Smart Park Coordinates' | 'Missing' | 'Unknown';
   coordinateConversionStatus?: 'Ready for Map' | 'Pending CRS Confirmation' | 'Missing' | 'Invalid';
   canPlotOnMap?: boolean;
   gisValidationStatus?: 'Valid' | 'Suspicious' | 'Invalid' | 'Needs Review';

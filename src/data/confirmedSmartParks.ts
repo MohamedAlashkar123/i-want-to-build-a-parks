@@ -21,36 +21,42 @@ const smartParkCapabilities = ['Cameras', 'Sensors', 'Smart sensor management sy
 export const confirmedSmartParks: ConfirmedSmartPark[] = [
   {
     municipality: 'ADM',
-    smartParkNameEn: 'Family Park B',
-    smartParkNameAr: 'حديقة العائلة ب',
-    aliases: ['Family Park B', 'حديقة العائلة ب', 'حديقة العائلة - ب'],
-    capabilities: smartParkCapabilities,
-    smartSystemAvailable: true,
-    hasSensors: true,
-    hasCameras: true,
-    coordinateStatus: 'Pending',
-  },
-  {
-    municipality: 'ADM',
     smartParkNameEn: 'Dalma Park',
-    smartParkNameAr: 'حديقة دلما',
-    aliases: ['Dalma Park', 'حديقة دلما', 'Delma Park'],
+    smartParkNameAr: 'حديقة دالما',
+    aliases: ['Dalma Park', 'حديقة دالما', 'حديقة دلما', 'Delma Park'],
     capabilities: smartParkCapabilities,
     smartSystemAvailable: true,
     hasSensors: true,
     hasCameras: true,
-    coordinateStatus: 'Pending',
+    latitude: 24.4686,
+    longitude: 54.3631,
+    coordinateStatus: 'Provided',
   },
   {
     municipality: 'ADM',
-    smartParkNameEn: 'Corniche Beach Park',
-    smartParkNameAr: 'حديقة شاطئ الكورنيش',
-    aliases: ['Corniche Beach Park', 'حديقة شاطئ الكورنيش', 'Corniche Park', 'كورنيش بيتش بارك'],
+    smartParkNameEn: 'Corniche Park',
+    smartParkNameAr: 'حديقة الكورنيش',
+    aliases: ['Corniche Park', 'Corniche Beach Park', 'حديقة الكورنيش', 'حديقة شاطئ الكورنيش'],
     capabilities: smartParkCapabilities,
     smartSystemAvailable: true,
     hasSensors: true,
     hasCameras: true,
-    coordinateStatus: 'Pending',
+    latitude: 24.4762,
+    longitude: 54.3573,
+    coordinateStatus: 'Provided',
+  },
+  {
+    municipality: 'ADM',
+    smartParkNameEn: 'Family Park B',
+    smartParkNameAr: 'حديقة العائلة B',
+    aliases: ['Family Park B', 'حديقة العائلة B', 'حديقة العائلة ب', 'حديقة العائلة - ب'],
+    capabilities: smartParkCapabilities,
+    smartSystemAvailable: true,
+    hasSensors: true,
+    hasCameras: true,
+    latitude: 24.4697,
+    longitude: 54.3499,
+    coordinateStatus: 'Provided',
   },
   {
     municipality: 'AAM',
@@ -61,7 +67,9 @@ export const confirmedSmartParks: ConfirmedSmartPark[] = [
     smartSystemAvailable: true,
     hasSensors: true,
     hasCameras: true,
-    coordinateStatus: 'Pending',
+    latitude: 24.2194,
+    longitude: 55.7606,
+    coordinateStatus: 'Provided',
   },
   {
     municipality: 'AAM',
@@ -72,14 +80,17 @@ export const confirmedSmartParks: ConfirmedSmartPark[] = [
     smartSystemAvailable: true,
     hasSensors: true,
     hasCameras: true,
-    coordinateStatus: 'Pending',
+    latitude: 24.1917,
+    longitude: 55.7422,
+    coordinateStatus: 'Provided',
   },
   {
     municipality: 'DRM',
     smartParkNameEn: 'Sheikha Salama bint Butti Park',
-    smartParkNameAr: 'حديقة الشيخة سلامة بن بطي',
+    smartParkNameAr: 'حديقة الشيخة سلامة بنت بطي',
     aliases: [
       'Sheikha Salama bint Butti Park',
+      'حديقة الشيخة سلامة بنت بطي',
       'حديقة الشيخة سلامة بن بطي',
       'حديقة الشيخة سلامة بن بوطي',
       'منتزه الشيخة سلامة بنت بطي',
@@ -89,7 +100,9 @@ export const confirmedSmartParks: ConfirmedSmartPark[] = [
     smartSystemAvailable: true,
     hasSensors: true,
     hasCameras: true,
-    coordinateStatus: 'Pending',
+    latitude: 23.6549,
+    longitude: 53.7058,
+    coordinateStatus: 'Provided',
   },
 ];
 
@@ -143,6 +156,9 @@ export function enrichWithConfirmedSmartPark(park: ParkRecord): ParkRecord {
     };
   }
 
+  const hasUsableExcelCoordinates = park.canPlotOnMap && typeof park.latitude === 'number' && typeof park.longitude === 'number';
+  const hasProvidedCoordinates = typeof smartPark.latitude === 'number' && typeof smartPark.longitude === 'number';
+
   return {
     ...park,
     isSmartPark: true,
@@ -150,5 +166,10 @@ export function enrichWithConfirmedSmartPark(park: ParkRecord): ParkRecord {
     smartParkCapabilities: smartPark.capabilities,
     smartSystemAvailable: smartPark.smartSystemAvailable,
     hasSensors: smartPark.hasSensors,
+    coordinateSource: !hasUsableExcelCoordinates && hasProvidedCoordinates ? 'Confirmed Smart Park Coordinates' : park.coordinateSource,
+    coordinateConversionStatus: !hasUsableExcelCoordinates && hasProvidedCoordinates ? 'Ready for Map' : park.coordinateConversionStatus,
+    canPlotOnMap: hasUsableExcelCoordinates || hasProvidedCoordinates ? true : park.canPlotOnMap,
+    latitude: hasUsableExcelCoordinates ? park.latitude : smartPark.latitude ?? park.latitude,
+    longitude: hasUsableExcelCoordinates ? park.longitude : smartPark.longitude ?? park.longitude,
   };
 }

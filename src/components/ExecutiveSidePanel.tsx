@@ -89,6 +89,7 @@ export default function ExecutiveSidePanel({ parks }: ExecutiveSidePanelProps) {
             <h3 className="text-sm font-semibold text-white">Data Availability</h3>
           </div>
           <ul className="list-disc space-y-1.5 pl-4 text-xs leading-5 text-slate-300 marker:text-cyan-300">
+            <li>Confirmed smart parks are based on project-team confirmation and provided coordinates, not inferred from the Excel inventory.</li>
             <li>No AI analytics or advanced video analytics in the current dataset.</li>
             <li>No operational camera status or actual coverage percentage.</li>
             <li>X/Y coordinates require CRS/EPSG confirmation.</li>
