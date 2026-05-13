@@ -1,5 +1,5 @@
 import mapboxgl from 'mapbox-gl';
-import { LocateFixed, RotateCcw } from 'lucide-react';
+import { Layers, LocateFixed, RotateCcw } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ParkRecord } from '../types/park';
 import { validateParkLocation } from '../utils/gisValidation';
@@ -190,6 +190,7 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const [activeStyle, setActiveStyle] = useState(defaultMapStyle);
   const [showSuspiciousCoordinates, setShowSuspiciousCoordinates] = useState(false);
+  const [isStyleMenuOpen, setIsStyleMenuOpen] = useState(false);
 
   const mapReadyParks = useMemo(() => parks.filter(isValidUaeCoordinate), [parks]);
   const needsReviewCount = useMemo(() => mapReadyParks.filter(isNeedsGisReview).length, [mapReadyParks]);
@@ -216,6 +217,8 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
 
   function changeMapStyle(style: string) {
     const map = mapRef.current;
+    setIsStyleMenuOpen(false);
+
     if (activeStyle === style) {
       return;
     }
@@ -384,8 +387,21 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
             <RotateCcw className="h-4 w-4" aria-hidden="true" />
           </button>
 
-          <div className="mt-1 rounded-lg border border-white/10 bg-slate-950/85 p-1 shadow-lg shadow-black/25 backdrop-blur">
-            {mapStyleOptions.map((option) => (
+          <div className="relative">
+            <button
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-slate-950/85 text-slate-200 shadow-lg shadow-black/25 backdrop-blur transition hover:border-cyan-300/40 hover:text-white"
+              type="button"
+              onClick={() => setIsStyleMenuOpen((current) => !current)}
+              title="Map style"
+              aria-label="Map style"
+              aria-expanded={isStyleMenuOpen}
+            >
+              <Layers className="h-4 w-4" aria-hidden="true" />
+            </button>
+
+            {isStyleMenuOpen && (
+              <div className="absolute right-0 top-11 z-30 min-w-28 rounded-lg border border-white/10 bg-slate-950/90 p-1 shadow-xl shadow-black/30 backdrop-blur">
+                {mapStyleOptions.map((option) => (
               <button
                 key={option.label}
                 className={`block w-full rounded-md px-2 py-1 text-left text-[11px] font-semibold transition ${
@@ -400,7 +416,9 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
               >
                 {option.label}
               </button>
-            ))}
+                ))}
+              </div>
+            )}
           </div>
 
           <label className="flex w-28 cursor-pointer items-center gap-2 rounded-lg border border-white/10 bg-slate-950/85 px-2 py-1.5 text-[11px] font-semibold text-slate-200 shadow-lg shadow-black/25 backdrop-blur">
