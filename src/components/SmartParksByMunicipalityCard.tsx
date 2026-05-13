@@ -1,6 +1,13 @@
 import { Cpu } from 'lucide-react';
+import { confirmedSmartParks } from '../data/confirmedSmartParks';
 import type { ParkRecord } from '../types/park';
-import { getSmartParksByMunicipality, getSmartParksCount } from '../utils/dashboardCalculations';
+import {
+  getSmartParksByMunicipality,
+  getSmartParksCount,
+  getSmartParksWithVisitorCountingCount,
+  getSmartParksWithoutVisitorCountingCctvCount,
+  getTotalVisitorCountingCameras,
+} from '../utils/dashboardCalculations';
 
 type SmartParksByMunicipalityCardProps = {
   parks: ParkRecord[];
@@ -15,15 +22,18 @@ function formatNumber(value: number): string {
 export default function SmartParksByMunicipalityCard({ parks, isLoading = false, compact = false }: SmartParksByMunicipalityCardProps) {
   const rows = getSmartParksByMunicipality(parks);
   const total = getSmartParksCount(parks);
+  const visitorCountingParks = getSmartParksWithVisitorCountingCount(parks);
+  const visitorCountingCameras = getTotalVisitorCountingCameras(parks);
+  const noVisitorCountingCctv = getSmartParksWithoutVisitorCountingCctvCount(parks);
   const maxValue = Math.max(1, ...rows.map((row) => row.smartParks));
 
   return (
     <section className="h-full overflow-hidden rounded-2xl border border-white/10 bg-slate-900/75 p-4 shadow-xl shadow-black/20">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-base font-semibold text-white">Smart Parks by Municipality</h2>
+          <h2 className="text-base font-semibold text-white">Confirmed Smart Parks Capabilities</h2>
           <p className="mt-1 text-xs leading-5 text-slate-400">
-            Confirmed smart parks with cameras, sensors, and smart sensor management.
+            Visitor counting CCTV capability based on project-team input.
           </p>
         </div>
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-violet-300/20 bg-violet-300/10 text-violet-100">
@@ -35,6 +45,19 @@ export default function SmartParksByMunicipalityCard({ parks, isLoading = false,
         <div className="rounded-xl border border-violet-300/20 bg-violet-300/10 p-3">
           <p className="text-xs text-violet-100">Confirmed Smart Parks</p>
           <p className="mt-1 text-3xl font-bold text-white">{isLoading ? '-' : formatNumber(total)}</p>
+        </div>
+
+        <div className="grid gap-2 sm:grid-cols-3">
+          {[
+            ['Visitor Counting', visitorCountingParks],
+            ['Visitor CCTV Cameras', visitorCountingCameras],
+            ['No Visitor CCTV', noVisitorCountingCctv],
+          ].map(([label, value]) => (
+            <div key={label} className="rounded-xl border border-white/10 bg-slate-950/70 p-3">
+              <p className="truncate text-xs text-slate-500">{label}</p>
+              <p className="mt-1 text-xl font-bold text-white">{isLoading ? '-' : formatNumber(Number(value))}</p>
+            </div>
+          ))}
         </div>
 
         <div className="space-y-2">
@@ -51,6 +74,33 @@ export default function SmartParksByMunicipalityCard({ parks, isLoading = false,
             </div>
           ))}
         </div>
+      </div>
+
+      <div className="mt-4 max-w-full overflow-x-auto rounded-xl border border-white/10">
+        <table className="w-full min-w-[760px] border-collapse text-left text-xs">
+          <thead className="bg-slate-950 text-slate-300">
+            <tr>
+              <th className="whitespace-nowrap px-3 py-2 font-semibold">Smart Park</th>
+              <th className="whitespace-nowrap px-3 py-2 font-semibold">Municipality</th>
+              <th className="whitespace-nowrap px-3 py-2 font-semibold">Visitor Counting</th>
+              <th className="whitespace-nowrap px-3 py-2 font-semibold">CCTV Cam Count</th>
+              <th className="whitespace-nowrap px-3 py-2 font-semibold">Note</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/10 bg-slate-950/50">
+            {confirmedSmartParks.map((smartPark) => (
+              <tr key={`${smartPark.municipality}-${smartPark.smartParkNameEn}`} className="hover:bg-white/[0.03]">
+                <td className="whitespace-nowrap px-3 py-2 font-semibold text-white">{smartPark.smartParkNameEn}</td>
+                <td className="whitespace-nowrap px-3 py-2 text-slate-300">{smartPark.municipality}</td>
+                <td className="whitespace-nowrap px-3 py-2 text-emerald-100">{smartPark.visitorCountingMethod}</td>
+                <td className="whitespace-nowrap px-3 py-2 text-slate-100">
+                  {formatNumber(smartPark.visitorCountingCameraCount)}
+                </td>
+                <td className="whitespace-nowrap px-3 py-2 text-slate-400">{smartPark.visitorCountingNote || '-'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
       {!compact && (

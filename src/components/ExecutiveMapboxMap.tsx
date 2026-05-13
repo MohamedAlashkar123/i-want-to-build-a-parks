@@ -174,6 +174,16 @@ function createPopupContent(park: PlottedPark): HTMLElement {
 
   if (park.isSmartPark) {
     rows.appendChild(createPopupRow('Capabilities', formatOptional(park.smartParkCapabilities?.join(', '))));
+    rows.appendChild(createPopupRow('Visitor Counting', formatOptional(park.visitorCountingMethod)));
+    rows.appendChild(
+      createPopupRow(
+        'Visitor CCTV Cameras',
+        typeof park.visitorCountingCameraCount === 'number' ? formatNumber(park.visitorCountingCameraCount) : '-',
+      ),
+    );
+    if (park.visitorCountingNote) {
+      rows.appendChild(createPopupRow('Visitor Counting Note', park.visitorCountingNote));
+    }
   }
 
   if (isNeedsGisReview(park)) {

@@ -149,6 +149,22 @@ export function getSmartParksByMunicipality(parks: ParkRecord[]): SmartParksByMu
   }));
 }
 
+export function getSmartParksWithVisitorCountingCount(parks: ParkRecord[]): number {
+  return parks.length === 0 ? 0 : confirmedSmartParks.filter((smartPark) => smartPark.visitorCountingCapability).length;
+}
+
+export function getTotalVisitorCountingCameras(parks: ParkRecord[]): number {
+  return parks.length === 0
+    ? 0
+    : confirmedSmartParks.reduce((total, smartPark) => total + smartPark.visitorCountingCameraCount, 0);
+}
+
+export function getSmartParksWithoutVisitorCountingCctvCount(parks: ParkRecord[]): number {
+  return parks.length === 0
+    ? 0
+    : confirmedSmartParks.filter((smartPark) => smartPark.visitorCountingCameraCount === 0).length;
+}
+
 export function getCctvStatusChartData(parks: ParkRecord[]): ChartDataPoint[] {
   return [
     { name: 'Parks with CCTV', value: getParksWithCctv(parks) },

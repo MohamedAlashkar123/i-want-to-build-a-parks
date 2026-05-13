@@ -14,6 +14,10 @@ export type ConfirmedSmartPark = {
   latitude?: number;
   longitude?: number;
   coordinateStatus?: 'Provided' | 'Pending' | 'Matched from Excel' | 'Needs CRS Conversion';
+  visitorCountingCapability: true;
+  visitorCountingMethod: 'CCTV Cam';
+  visitorCountingCameraCount: number;
+  visitorCountingNote?: string;
 };
 
 const smartParkCapabilities = ['Cameras', 'Sensors', 'Smart sensor management system'];
@@ -31,6 +35,9 @@ export const confirmedSmartParks: ConfirmedSmartPark[] = [
     latitude: 24.4686,
     longitude: 54.3631,
     coordinateStatus: 'Provided',
+    visitorCountingCapability: true,
+    visitorCountingMethod: 'CCTV Cam',
+    visitorCountingCameraCount: 30,
   },
   {
     municipality: 'ADM',
@@ -44,6 +51,10 @@ export const confirmedSmartParks: ConfirmedSmartPark[] = [
     latitude: 24.4762,
     longitude: 54.3573,
     coordinateStatus: 'Provided',
+    visitorCountingCapability: true,
+    visitorCountingMethod: 'CCTV Cam',
+    visitorCountingCameraCount: 0,
+    visitorCountingNote: 'No CCTV Cameras',
   },
   {
     municipality: 'ADM',
@@ -57,6 +68,9 @@ export const confirmedSmartParks: ConfirmedSmartPark[] = [
     latitude: 24.4697,
     longitude: 54.3499,
     coordinateStatus: 'Provided',
+    visitorCountingCapability: true,
+    visitorCountingMethod: 'CCTV Cam',
+    visitorCountingCameraCount: 41,
   },
   {
     municipality: 'AAM',
@@ -70,6 +84,9 @@ export const confirmedSmartParks: ConfirmedSmartPark[] = [
     latitude: 24.2194,
     longitude: 55.7606,
     coordinateStatus: 'Provided',
+    visitorCountingCapability: true,
+    visitorCountingMethod: 'CCTV Cam',
+    visitorCountingCameraCount: 50,
   },
   {
     municipality: 'AAM',
@@ -83,6 +100,9 @@ export const confirmedSmartParks: ConfirmedSmartPark[] = [
     latitude: 24.1917,
     longitude: 55.7422,
     coordinateStatus: 'Provided',
+    visitorCountingCapability: true,
+    visitorCountingMethod: 'CCTV Cam',
+    visitorCountingCameraCount: 45,
   },
   {
     municipality: 'DRM',
@@ -103,6 +123,9 @@ export const confirmedSmartParks: ConfirmedSmartPark[] = [
     latitude: 23.6549,
     longitude: 53.7058,
     coordinateStatus: 'Provided',
+    visitorCountingCapability: true,
+    visitorCountingMethod: 'CCTV Cam',
+    visitorCountingCameraCount: 36,
   },
 ];
 
@@ -166,6 +189,10 @@ export function enrichWithConfirmedSmartPark(park: ParkRecord): ParkRecord {
     smartParkCapabilities: smartPark.capabilities,
     smartSystemAvailable: smartPark.smartSystemAvailable,
     hasSensors: smartPark.hasSensors,
+    visitorCountingCapability: smartPark.visitorCountingCapability,
+    visitorCountingMethod: smartPark.visitorCountingMethod,
+    visitorCountingCameraCount: smartPark.visitorCountingCameraCount,
+    visitorCountingNote: smartPark.visitorCountingNote,
     coordinateSource: !hasUsableExcelCoordinates && hasProvidedCoordinates ? 'Confirmed Smart Park Coordinates' : park.coordinateSource,
     coordinateConversionStatus: !hasUsableExcelCoordinates && hasProvidedCoordinates ? 'Ready for Map' : park.coordinateConversionStatus,
     canPlotOnMap: hasUsableExcelCoordinates || hasProvidedCoordinates ? true : park.canPlotOnMap,
