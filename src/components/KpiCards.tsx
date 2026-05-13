@@ -29,67 +29,57 @@ export default function KpiCards({ parks, isLoading = false }: KpiCardsProps) {
     {
       label: 'Total Parks',
       value: formatNumber(getTotalParks(parks)),
-      helper: 'Unified Excel records',
       icon: Trees,
     },
     {
-      label: 'Parks with CCTV',
+      label: 'With CCTV',
       value: formatNumber(getParksWithCctv(parks)),
-      helper: 'CCTV status = Yes',
       icon: Camera,
     },
     {
-      label: 'Parks without CCTV',
+      label: 'Without CCTV',
       value: formatNumber(getParksWithoutCctv(parks)),
-      helper: 'CCTV status = No',
       icon: Camera,
     },
     {
-      label: 'Total Cameras',
+      label: 'Cameras',
       value: formatNumber(getTotalCameras(parks)),
-      helper: 'Recorded camera count',
       icon: MapPinned,
     },
     {
-      label: 'Parks with CCTV %',
+      label: 'CCTV %',
       value: formatPercentage(getCctvParkPercentage(parks)),
-      helper: 'Not actual camera coverage',
       icon: Percent,
     },
     {
       label: 'DMT Integration',
       value: formatNumber(getDmtIntegratedParks(parks)),
-      helper: 'Current status: not integrated',
       icon: Link2Off,
     },
     {
-      label: 'Confirmed Smart Parks',
+      label: 'Smart Parks',
       value: formatNumber(getSmartParksCount(parks)),
-      helper: 'Confirmed project-team list',
       icon: Cpu,
     },
   ];
 
   return (
-    <section className="grid max-w-full grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-7">
+    <section className="grid max-w-full grid-cols-2 gap-3 md:grid-cols-4 2xl:grid-cols-7">
       {kpis.map((kpi) => {
         const Icon = kpi.icon;
 
         return (
           <article
             key={kpi.label}
-            className="min-h-28 min-w-0 overflow-hidden rounded-2xl border border-white/10 bg-slate-900/75 p-4 shadow-xl shadow-black/20"
+            className="min-w-0 overflow-hidden rounded-xl border border-white/10 bg-slate-900/75 p-3 shadow-xl shadow-black/20"
           >
-            <div className="flex items-start justify-between gap-3">
-              <p className="line-clamp-2 text-sm font-semibold leading-5 text-slate-300">{kpi.label}</p>
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-cyan-300/15 bg-cyan-300/10 text-cyan-100">
+            <div className="flex items-center justify-between gap-2">
+              <p className="truncate text-xs font-semibold uppercase tracking-wide text-slate-400">{kpi.label}</p>
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-cyan-300/15 bg-cyan-300/10 text-cyan-100">
                 <Icon className="h-4 w-4" aria-hidden="true" />
               </span>
             </div>
-            <p className="mt-3 truncate text-3xl font-bold text-white">{isLoading ? '-' : kpi.value}</p>
-            <p className="mt-2 truncate text-xs text-slate-500" title={kpi.helper}>
-              {kpi.helper}
-            </p>
+            <p className="mt-1 truncate text-2xl font-bold text-white">{isLoading ? '-' : kpi.value}</p>
           </article>
         );
       })}

@@ -12,7 +12,7 @@ export default function Header() {
             Parks CCTV & Smart Parks Executive Dashboard
           </h1>
           <p className="mt-0.5 truncate text-xs text-slate-300 lg:text-sm">
-            Executive overview of CCTV availability, GIS readiness, confirmed smart parks, and priority gaps.
+            CCTV availability, GIS readiness, smart parks, and priority gaps across public parks.
           </p>
         </div>
       </div>

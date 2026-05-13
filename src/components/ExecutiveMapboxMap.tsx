@@ -2,15 +2,6 @@ import mapboxgl from 'mapbox-gl';
 import { LocateFixed, RotateCcw } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ParkRecord } from '../types/park';
-import {
-  getCctvParkPercentage,
-  getDmtIntegratedParks,
-  getParksWithCctv,
-  getParksWithoutCctv,
-  getSmartParksCount,
-  getTotalCameras,
-  getTotalParks,
-} from '../utils/dashboardCalculations';
 import { validateParkLocation } from '../utils/gisValidation';
 
 type ExecutiveMapboxMapProps = {
@@ -42,11 +33,6 @@ const defaultMapStyle = 'mapbox://styles/mapbox/light-v11';
 
 function formatNumber(value: number): string {
   return new Intl.NumberFormat('en-US').format(value);
-}
-
-function formatPercentage(value: number): string {
-  const rounded = Number.isInteger(value) ? value.toFixed(0) : value.toFixed(1);
-  return `${rounded}%`;
 }
 
 function formatOptional(value: string | number | null | undefined): string {
@@ -207,29 +193,10 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
 
   const mapReadyParks = useMemo(() => parks.filter(isValidUaeCoordinate), [parks]);
   const needsReviewCount = useMemo(() => mapReadyParks.filter(isNeedsGisReview).length, [mapReadyParks]);
-  const xYPendingCount = useMemo(() => parks.filter((park) => park.coordinateSource === 'Projected XY').length, [parks]);
   const plottedParks = useMemo(
     () => mapReadyParks.filter((park) => showSuspiciousCoordinates || !isNeedsGisReview(park)),
     [mapReadyParks, showSuspiciousCoordinates],
   );
-  const notPlottedCount = parks.length - plottedParks.length;
-
-  const kpiItems = [
-    ['Total Parks', formatNumber(getTotalParks(parks))],
-    ['With CCTV', formatNumber(getParksWithCctv(parks))],
-    ['Without CCTV', formatNumber(getParksWithoutCctv(parks))],
-    ['Cameras', formatNumber(getTotalCameras(parks))],
-    ['CCTV %', formatPercentage(getCctvParkPercentage(parks))],
-    ['DMT', formatNumber(getDmtIntegratedParks(parks))],
-    ['Smart Parks', formatNumber(getSmartParksCount(parks))],
-  ];
-
-  const mapSummaryItems = [
-    ['Plotted', formatNumber(plottedParks.length)],
-    ['Not Plotted', formatNumber(notPlottedCount)],
-    ['Needs GIS Review', formatNumber(needsReviewCount)],
-    ['X/Y Pending CRS', formatNumber(xYPendingCount)],
-  ];
 
   function fitToPlottedParks() {
     const map = mapRef.current;
@@ -390,28 +357,11 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
           </div>
         )}
 
-        <div className="pointer-events-none absolute left-3 right-14 top-3 z-10 flex flex-wrap gap-2 sm:left-4 sm:right-24">
-          {kpiItems.map(([label, value]) => (
-            <article
-              key={label}
-              className="min-w-[86px] rounded-lg border border-white/10 bg-slate-950/85 px-2.5 py-1.5 shadow-lg shadow-black/25 backdrop-blur"
-            >
-              <p className="truncate text-[10px] font-medium uppercase tracking-wide text-slate-400">{label}</p>
-              <p className="mt-0.5 truncate text-sm font-bold text-white">{value}</p>
-            </article>
-          ))}
-        </div>
-
-        <div className="pointer-events-none absolute left-3 right-14 top-[84px] z-10 flex flex-wrap gap-2 sm:left-4 sm:right-24">
-          {mapSummaryItems.map(([label, value]) => (
-            <article
-              key={label}
-              className="rounded-lg border border-white/10 bg-slate-950/80 px-2.5 py-1.5 shadow-lg shadow-black/25 backdrop-blur"
-            >
-              <span className="text-[10px] font-medium uppercase tracking-wide text-slate-400">{label}</span>
-              <span className="ml-1.5 text-xs font-bold text-white">{value}</span>
-            </article>
-          ))}
+        <div className="pointer-events-none absolute left-4 top-4 z-10 rounded-lg border border-white/10 bg-slate-950/80 px-3 py-2 text-xs text-slate-200 shadow-lg shadow-black/25 backdrop-blur">
+          <span className="font-semibold text-white">{formatNumber(plottedParks.length)}</span> plotted
+          {needsReviewCount > 0 && (
+            <span className="ml-2 text-orange-200">• {formatNumber(needsReviewCount)} need GIS review</span>
+          )}
         </div>
 
         <div className="absolute right-4 top-4 z-20 flex flex-col gap-2">

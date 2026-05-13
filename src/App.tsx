@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import ChartsPanel from './components/ChartsPanel';
 import ExecutiveMapboxMap from './components/ExecutiveMapboxMap';
-import ExecutiveOverviewCards from './components/ExecutiveOverviewCards';
 import ExecutiveSidePanel from './components/ExecutiveSidePanel';
 import GisConversionReadiness from './components/GisConversionReadiness';
 import Header from './components/Header';
+import KpiCards from './components/KpiCards';
 import MunicipalitySummaryTable from './components/MunicipalitySummaryTable';
+import SmartParksByMunicipalityCard from './components/SmartParksByMunicipalityCard';
 import TopPriorityGaps from './components/TopPriorityGaps';
 import { loadNormalizedParks } from './data/normalizeParks';
 import type { ParkRecord } from './types/park';
@@ -55,20 +56,22 @@ export default function App() {
       <div className="mx-auto max-w-[1680px] space-y-4">
         <Header />
 
+        <KpiCards parks={normalizedParksState.parks} isLoading={normalizedParksState.isLoading} />
+
         <section className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,3fr)_minmax(280px,1fr)]">
           <ExecutiveMapboxMap parks={normalizedParksState.parks} />
           <ExecutiveSidePanel parks={normalizedParksState.parks} />
         </section>
 
-        <ExecutiveOverviewCards parks={normalizedParksState.parks} isLoading={normalizedParksState.isLoading} />
-
         <ChartsPanel parks={normalizedParksState.parks} />
+
+        <SmartParksByMunicipalityCard parks={normalizedParksState.parks} isLoading={normalizedParksState.isLoading} />
 
         <MunicipalitySummaryTable parks={normalizedParksState.parks} isLoading={normalizedParksState.isLoading} />
 
-        <GisConversionReadiness parks={normalizedParksState.parks} isLoading={normalizedParksState.isLoading} />
-
         <TopPriorityGaps parks={normalizedParksState.parks} isLoading={normalizedParksState.isLoading} />
+
+        <GisConversionReadiness parks={normalizedParksState.parks} isLoading={normalizedParksState.isLoading} />
       </div>
     </main>
   );
