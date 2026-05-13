@@ -1,4 +1,4 @@
-import { Download, MapPinned } from 'lucide-react';
+import { ChevronDown, ChevronUp, Download, MapPinned } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { ParkRecord } from '../types/park';
 import {
@@ -77,6 +77,7 @@ export default function GisConversionReadiness({ parks, isLoading = false }: Gis
   const [municipality, setMunicipality] = useState<MunicipalityFilter>('All');
   const [region, setRegion] = useState('All');
   const [sourceSheet, setSourceSheet] = useState('All');
+  const [showDetails, setShowDetails] = useState(false);
 
   const summary = getGisDataQualitySummary(parks);
   const projectedRecords = useMemo(() => getProjectedXYRecords(parks), [parks]);
@@ -115,7 +116,7 @@ export default function GisConversionReadiness({ parks, isLoading = false }: Gis
 
   return (
     <section className="max-w-full overflow-hidden rounded-2xl border border-white/10 bg-slate-900/75 p-5 shadow-xl shadow-black/20">
-      <div className="mb-5 flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+      <div className="mb-4 flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div className="min-w-0">
           <div className="mb-2 flex items-center gap-3">
             <MapPinned className="h-5 w-5 text-amber-100" aria-hidden="true" />
@@ -137,7 +138,7 @@ export default function GisConversionReadiness({ parks, isLoading = false }: Gis
         </button>
       </div>
 
-      <div className="mb-5 grid grid-cols-1 gap-3 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
         {summaryCards.map(([label, value]) => (
           <article key={label} className="rounded-xl border border-white/10 bg-slate-950/70 p-4">
             <p className="truncate text-xs text-slate-500">{label}</p>
@@ -146,7 +147,23 @@ export default function GisConversionReadiness({ parks, isLoading = false }: Gis
         ))}
       </div>
 
-      <div className="mb-5 grid grid-cols-1 gap-3 md:grid-cols-3">
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-slate-950/50 px-4 py-3">
+        <p className="text-xs leading-5 text-slate-400">
+          Detailed projected X/Y records are available for CRS review and export.
+        </p>
+        <button
+          className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-slate-950 px-3 py-2 text-xs font-semibold text-slate-200 transition hover:border-cyan-300/40 hover:text-white"
+          type="button"
+          onClick={() => setShowDetails((current) => !current)}
+        >
+          {showDetails ? <ChevronUp className="h-4 w-4" aria-hidden="true" /> : <ChevronDown className="h-4 w-4" aria-hidden="true" />}
+          {showDetails ? 'Hide review table' : 'Show review table'}
+        </button>
+      </div>
+
+      {showDetails && (
+        <>
+      <div className="mb-5 mt-5 grid grid-cols-1 gap-3 md:grid-cols-3">
         <label className="min-w-0 text-sm text-slate-300">
           Municipality
           <select
@@ -257,6 +274,8 @@ export default function GisConversionReadiness({ parks, isLoading = false }: Gis
       <p className="mt-3 text-xs leading-6 text-slate-500">
         Showing first 25 projected X/Y records after filtering. Use CSV export for the full review list.
       </p>
+        </>
+      )}
     </section>
   );
 }

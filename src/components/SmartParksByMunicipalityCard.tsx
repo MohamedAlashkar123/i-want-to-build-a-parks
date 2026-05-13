@@ -5,19 +5,20 @@ import { getSmartParksByMunicipality, getSmartParksCount } from '../utils/dashbo
 type SmartParksByMunicipalityCardProps = {
   parks: ParkRecord[];
   isLoading?: boolean;
+  compact?: boolean;
 };
 
 function formatNumber(value: number): string {
   return new Intl.NumberFormat('en-US').format(value);
 }
 
-export default function SmartParksByMunicipalityCard({ parks, isLoading = false }: SmartParksByMunicipalityCardProps) {
+export default function SmartParksByMunicipalityCard({ parks, isLoading = false, compact = false }: SmartParksByMunicipalityCardProps) {
   const rows = getSmartParksByMunicipality(parks);
   const total = getSmartParksCount(parks);
   const maxValue = Math.max(1, ...rows.map((row) => row.smartParks));
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-white/10 bg-slate-900/75 p-4 shadow-xl shadow-black/20">
+    <section className="h-full overflow-hidden rounded-2xl border border-white/10 bg-slate-900/75 p-4 shadow-xl shadow-black/20">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="text-base font-semibold text-white">Smart Parks by Municipality</h2>
@@ -30,7 +31,7 @@ export default function SmartParksByMunicipalityCard({ parks, isLoading = false 
         </span>
       </div>
 
-      <div className="mt-4 grid gap-3 lg:grid-cols-[160px_minmax(0,1fr)] lg:items-center">
+      <div className={`mt-4 grid gap-3 ${compact ? '' : 'lg:grid-cols-[160px_minmax(0,1fr)] lg:items-center'}`}>
         <div className="rounded-xl border border-violet-300/20 bg-violet-300/10 p-3">
           <p className="text-xs text-violet-100">Confirmed Smart Parks</p>
           <p className="mt-1 text-3xl font-bold text-white">{isLoading ? '-' : formatNumber(total)}</p>
@@ -52,10 +53,12 @@ export default function SmartParksByMunicipalityCard({ parks, isLoading = false 
         </div>
       </div>
 
-      <p className="mt-4 rounded-xl border border-cyan-300/15 bg-cyan-300/10 px-3 py-2 text-xs leading-5 text-cyan-50">
-        Smart Park classification is based on the confirmed list provided by the project team, not inferred from the
-        Excel inventory.
-      </p>
+      {!compact && (
+        <p className="mt-4 rounded-xl border border-cyan-300/15 bg-cyan-300/10 px-3 py-2 text-xs leading-5 text-cyan-50">
+          Smart Park classification is based on the confirmed list provided by the project team, not inferred from the
+          Excel inventory.
+        </p>
+      )}
     </section>
   );
 }

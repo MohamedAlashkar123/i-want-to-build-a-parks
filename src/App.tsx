@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import ChartsPanel from './components/ChartsPanel';
 import ExecutiveMapboxMap from './components/ExecutiveMapboxMap';
+import ExecutiveOverviewCards from './components/ExecutiveOverviewCards';
 import ExecutiveSidePanel from './components/ExecutiveSidePanel';
 import GisConversionReadiness from './components/GisConversionReadiness';
 import Header from './components/Header';
 import MunicipalitySummaryTable from './components/MunicipalitySummaryTable';
-import SmartParksByMunicipalityCard from './components/SmartParksByMunicipalityCard';
 import TopPriorityGaps from './components/TopPriorityGaps';
 import { loadNormalizedParks } from './data/normalizeParks';
 import type { ParkRecord } from './types/park';
@@ -57,12 +57,12 @@ export default function App() {
 
         <section className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,3fr)_minmax(280px,1fr)]">
           <ExecutiveMapboxMap parks={normalizedParksState.parks} />
-          <ExecutiveSidePanel parks={normalizedParksState.parks} isLoading={normalizedParksState.isLoading} />
+          <ExecutiveSidePanel parks={normalizedParksState.parks} />
         </section>
 
-        <ChartsPanel parks={normalizedParksState.parks} />
+        <ExecutiveOverviewCards parks={normalizedParksState.parks} isLoading={normalizedParksState.isLoading} />
 
-        <SmartParksByMunicipalityCard parks={normalizedParksState.parks} isLoading={normalizedParksState.isLoading} />
+        <ChartsPanel parks={normalizedParksState.parks} />
 
         <MunicipalitySummaryTable parks={normalizedParksState.parks} isLoading={normalizedParksState.isLoading} />
 
