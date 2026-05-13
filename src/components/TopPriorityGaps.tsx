@@ -2,6 +2,7 @@ import { ListChecks } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { ParkRecord } from '../types/park';
 import { generateGapAnalysis, type GapAnalysisRecord } from '../utils/gapAnalysis';
+import CollapsibleSection from './CollapsibleSection';
 
 type TopPriorityGapsProps = {
   parks: ParkRecord[];
@@ -108,13 +109,12 @@ export default function TopPriorityGaps({ parks, isLoading = false }: TopPriorit
   ];
 
   return (
-    <section className="max-w-full overflow-hidden rounded-2xl border border-white/10 bg-slate-900/75 p-5 shadow-xl shadow-black/20">
-      <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0">
-          <h2 className="text-xl font-semibold text-white">Top 10 Priority Gaps</h2>
-          <p className="mt-1 text-sm leading-6 text-slate-400">Highest-priority generated gaps for executive follow-up.</p>
-        </div>
-        <div className="flex shrink-0 items-center gap-3">
+    <CollapsibleSection
+      title="Top 10 Priority Gaps"
+      subtitle="Highest-priority generated gaps for executive follow-up."
+      defaultOpen
+      actions={
+        <>
           <label className="flex items-center gap-2 text-sm text-slate-300">
             Municipality
             <select
@@ -131,10 +131,11 @@ export default function TopPriorityGaps({ parks, isLoading = false }: TopPriorit
           <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-amber-300/20 bg-amber-300/10 text-amber-100">
             <ListChecks className="h-5 w-5" aria-hidden="true" />
           </span>
-        </div>
-      </div>
-
-      <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        </>
+      }
+      summaryContent={
+        <>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {summaryItems.map(([label, value]) => (
           <article key={label} className="rounded-xl border border-white/10 bg-slate-950/70 p-3">
             <p className="truncate text-xs text-slate-500">{label}</p>
@@ -143,10 +144,12 @@ export default function TopPriorityGaps({ parks, isLoading = false }: TopPriorit
         ))}
       </div>
 
-      <p className="mb-4 rounded-xl border border-cyan-300/15 bg-cyan-300/10 px-4 py-3 text-sm leading-6 text-cyan-50">
+      <p className="mt-4 rounded-xl border border-cyan-300/15 bg-cyan-300/10 px-4 py-3 text-sm leading-6 text-cyan-50">
         Top gaps are generated from the current inventory and can be filtered by municipality.
       </p>
-
+        </>
+      }
+    >
       <div className="max-w-full overflow-x-auto rounded-xl border border-white/10">
         <table className="w-full min-w-[980px] border-collapse text-left text-sm">
           <thead className="bg-slate-950 text-slate-300">
@@ -198,6 +201,6 @@ export default function TopPriorityGaps({ parks, isLoading = false }: TopPriorit
           </tbody>
         </table>
       </div>
-    </section>
+    </CollapsibleSection>
   );
 }

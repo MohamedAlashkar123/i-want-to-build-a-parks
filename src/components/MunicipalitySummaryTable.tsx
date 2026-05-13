@@ -1,5 +1,6 @@
 import type { ParkRecord } from '../types/park';
 import { getMunicipalitySummary } from '../utils/dashboardCalculations';
+import CollapsibleSection from './CollapsibleSection';
 
 type MunicipalitySummaryTableProps = {
   parks: ParkRecord[];
@@ -23,12 +24,14 @@ export default function MunicipalitySummaryTable({ parks, isLoading = false }: M
   const rows = getMunicipalitySummary(parks);
 
   return (
-    <section className="max-w-full overflow-hidden rounded-2xl border border-white/10 bg-slate-900/75 p-5 shadow-xl shadow-black/20">
-      <div className="mb-4">
-        <h2 className="text-xl font-semibold text-white">Municipality Summary</h2>
-        <p className="mt-1 text-sm text-slate-400">Park-level CCTV availability and GIS readiness by municipality.</p>
-      </div>
-
+    <CollapsibleSection
+      title="Municipality Summary"
+      subtitle="Park-level CCTV availability and GIS readiness by municipality."
+      defaultOpen
+      summaryContent={
+        <p className="text-xs leading-6 text-slate-500">CCTV % is park-level CCTV availability, not physical camera coverage.</p>
+      }
+    >
       <div className="max-w-full overflow-x-auto rounded-xl border border-white/10">
         <table className="w-full min-w-[980px] border-collapse text-left text-sm">
           <thead className="bg-slate-950 text-slate-300">
@@ -82,8 +85,6 @@ export default function MunicipalitySummaryTable({ parks, isLoading = false }: M
           </tbody>
         </table>
       </div>
-
-      <p className="mt-3 text-xs leading-6 text-slate-500">CCTV % is park-level CCTV availability, not physical camera coverage.</p>
-    </section>
+    </CollapsibleSection>
   );
 }
