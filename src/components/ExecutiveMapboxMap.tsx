@@ -1,5 +1,5 @@
 import mapboxgl from 'mapbox-gl';
-import { Layers, LocateFixed, RotateCcw } from 'lucide-react';
+import { Check, Layers, LocateFixed, RotateCcw } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ParkRecord } from '../types/park';
 import { validateParkLocation } from '../utils/gisValidation';
@@ -190,13 +190,18 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const [activeStyle, setActiveStyle] = useState(defaultMapStyle);
   const [showSuspiciousCoordinates, setShowSuspiciousCoordinates] = useState(false);
+  const [showSmartParkIndicators, setShowSmartParkIndicators] = useState(true);
+  const [showCctvStatusMarkers, setShowCctvStatusMarkers] = useState(true);
   const [isStyleMenuOpen, setIsStyleMenuOpen] = useState(false);
 
   const mapReadyParks = useMemo(() => parks.filter(isValidUaeCoordinate), [parks]);
   const needsReviewCount = useMemo(() => mapReadyParks.filter(isNeedsGisReview).length, [mapReadyParks]);
   const plottedParks = useMemo(
-    () => mapReadyParks.filter((park) => showSuspiciousCoordinates || !isNeedsGisReview(park)),
-    [mapReadyParks, showSuspiciousCoordinates],
+    () =>
+      showCctvStatusMarkers
+        ? mapReadyParks.filter((park) => showSuspiciousCoordinates || !isNeedsGisReview(park))
+        : [],
+    [mapReadyParks, showCctvStatusMarkers, showSuspiciousCoordinates],
   );
 
   function fitToPlottedParks() {
@@ -293,14 +298,14 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
       const markerElement = document.createElement('button');
       markerElement.type = 'button';
       markerElement.className = `relative h-5 w-5 cursor-pointer rounded-full border-2 border-slate-950 transition duration-150 hover:scale-110 ${
-        park.isSmartPark ? 'ring-2 ring-violet-300 ring-offset-2 ring-offset-slate-950' : ''
+        park.isSmartPark && showSmartParkIndicators ? 'ring-2 ring-violet-300 ring-offset-2 ring-offset-slate-950' : ''
       } ${markerClassName(
         isNeedsGisReview(park) ? 'orange' : markerColorForCctv(park.hasCctvSystem),
       )}`;
       markerElement.setAttribute('aria-label', `${park.parkName} marker`);
       markerElement.style.pointerEvents = 'auto';
 
-      if (park.isSmartPark) {
+      if (park.isSmartPark && showSmartParkIndicators) {
         const smartBadge = document.createElement('span');
         smartBadge.className =
           'pointer-events-none absolute -right-1.5 -top-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full border border-slate-950 bg-violet-400 text-[9px] font-black leading-none text-white';
@@ -342,7 +347,7 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
       map.resize();
       map.fitBounds(bounds, { padding: 72, maxZoom: 12, duration: 0 });
     }
-  }, [plottedParks]);
+  }, [plottedParks, showSmartParkIndicators]);
 
   return (
     <section className="overflow-hidden rounded-2xl border border-white/10 bg-slate-900/75 shadow-xl shadow-black/20">
@@ -392,44 +397,71 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
               className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-slate-950/85 text-slate-200 shadow-lg shadow-black/25 backdrop-blur transition hover:border-cyan-300/40 hover:text-white"
               type="button"
               onClick={() => setIsStyleMenuOpen((current) => !current)}
-              title="Map style"
-              aria-label="Map style"
+              title="Map Options"
+              aria-label="Map Options"
               aria-expanded={isStyleMenuOpen}
             >
               <Layers className="h-4 w-4" aria-hidden="true" />
+              {showSuspiciousCoordinates && needsReviewCount > 0 && (
+                <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full border border-slate-950 bg-orange-400" />
+              )}
             </button>
 
             {isStyleMenuOpen && (
-              <div className="absolute right-0 top-11 z-30 min-w-28 rounded-lg border border-white/10 bg-slate-950/90 p-1 shadow-xl shadow-black/30 backdrop-blur">
+              <div className="absolute right-0 top-11 z-30 w-56 rounded-lg border border-white/10 bg-slate-950/90 p-2 shadow-xl shadow-black/30 backdrop-blur">
+                <p className="px-2 pb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500">Map Style</p>
                 {mapStyleOptions.map((option) => (
-              <button
-                key={option.label}
-                className={`block w-full rounded-md px-2 py-1 text-left text-[11px] font-semibold transition ${
-                  activeStyle === option.style
-                    ? 'bg-cyan-300/20 text-cyan-50'
-                    : 'text-slate-300 hover:bg-white/10 hover:text-white'
-                }`}
-                type="button"
-                onClick={() => changeMapStyle(option.style)}
-                title={`Switch to ${option.label} map style`}
-                aria-label={`Switch to ${option.label} map style`}
-              >
-                {option.label}
-              </button>
+                  <button
+                    key={option.label}
+                    className={`flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-[11px] font-semibold transition ${
+                      activeStyle === option.style
+                        ? 'bg-cyan-300/20 text-cyan-50'
+                        : 'text-slate-300 hover:bg-white/10 hover:text-white'
+                    }`}
+                    type="button"
+                    onClick={() => changeMapStyle(option.style)}
+                    title={`Switch to ${option.label} map style`}
+                    aria-label={`Switch to ${option.label} map style`}
+                  >
+                    {option.label}
+                    {activeStyle === option.style && <Check className="h-3.5 w-3.5" aria-hidden="true" />}
+                  </button>
+                ))}
+                <div className="my-2 border-t border-white/10" />
+                <p className="px-2 pb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500">Map Display</p>
+                {[
+                  {
+                    label: 'Show GIS Review Markers',
+                    checked: showSuspiciousCoordinates,
+                    onChange: setShowSuspiciousCoordinates,
+                  },
+                  {
+                    label: 'Show Smart Park Indicators',
+                    checked: showSmartParkIndicators,
+                    onChange: setShowSmartParkIndicators,
+                  },
+                  {
+                    label: 'Show CCTV Status Markers',
+                    checked: showCctvStatusMarkers,
+                    onChange: setShowCctvStatusMarkers,
+                  },
+                ].map((option) => (
+                  <label
+                    key={option.label}
+                    className="flex cursor-pointer items-center justify-between gap-3 rounded-md px-2 py-1.5 text-[11px] font-semibold text-slate-300 hover:bg-white/10 hover:text-white"
+                  >
+                    <span>{option.label}</span>
+                    <input
+                      className="h-3.5 w-3.5 accent-cyan-300"
+                      type="checkbox"
+                      checked={option.checked}
+                      onChange={(event) => option.onChange(event.target.checked)}
+                    />
+                  </label>
                 ))}
               </div>
             )}
           </div>
-
-          <label className="flex w-28 cursor-pointer items-center gap-2 rounded-lg border border-white/10 bg-slate-950/85 px-2 py-1.5 text-[11px] font-semibold text-slate-200 shadow-lg shadow-black/25 backdrop-blur">
-            <input
-              className="h-3 w-3 accent-orange-400"
-              type="checkbox"
-              checked={showSuspiciousCoordinates}
-              onChange={(event) => setShowSuspiciousCoordinates(event.target.checked)}
-            />
-            Review GIS
-          </label>
         </div>
 
         <div className="pointer-events-none absolute bottom-4 left-4 z-10 rounded-xl border border-white/10 bg-slate-950/85 p-3 shadow-xl shadow-black/30 backdrop-blur">
