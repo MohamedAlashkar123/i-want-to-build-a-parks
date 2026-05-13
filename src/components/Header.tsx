@@ -32,18 +32,20 @@ export default function Header() {
             </span>
           ))}
           {showLogo && (
-            <img
-              className="ml-1 h-10 w-auto rounded-md object-contain sm:h-12 lg:h-14"
-              src={logoSource}
-              alt="DMT"
-              onError={() => {
-                if (logoSource.endsWith('.png')) {
-                  setLogoSource('/dmt-logo.svg');
-                } else {
-                  setShowLogo(false);
-                }
-              }}
-            />
+            <span className="flex min-w-[180px] shrink-0 items-center justify-end sm:min-w-[220px] lg:min-w-[260px]">
+              <img
+                className="h-12 w-auto max-w-full rounded-md object-contain sm:h-14 lg:h-16"
+                src={logoSource}
+                alt="DMT"
+                onError={() => {
+                  if (logoSource.endsWith('.png')) {
+                    setLogoSource('/dmt-logo.svg');
+                  } else {
+                    setShowLogo(false);
+                  }
+                }}
+              />
+            </span>
           )}
         </div>
       </div>
