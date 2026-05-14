@@ -20,6 +20,7 @@ type KpiCardsProps = {
 type KpiItem = {
   label: string;
   value: string;
+  helper: string;
   icon: LucideIcon;
 };
 
@@ -37,49 +38,58 @@ export default function KpiCards({ parks, isLoading = false }: KpiCardsProps) {
     {
       label: 'Total Parks',
       value: formatNumber(getTotalParks(parks)),
+      helper: 'Unified inventory records',
       icon: Trees,
     },
     {
-      label: 'Parks with CCTV',
+      label: 'With CCTV',
       value: formatNumber(getParksWithCctv(parks)),
+      helper: 'CCTV status = Yes',
       icon: Camera,
     },
     {
-      label: 'Parks without CCTV',
+      label: 'Without CCTV',
       value: formatNumber(getParksWithoutCctv(parks)),
+      helper: 'CCTV status = No',
       icon: Camera,
     },
     {
-      label: 'Total Cameras',
+      label: 'Cameras',
       value: formatNumber(getTotalCameras(parks)),
+      helper: 'Recorded camera count',
       icon: MapPinned,
     },
     {
-      label: 'CCTV Availability %',
+      label: 'CCTV Availability',
       value: formatPercentage(getCctvParkPercentage(parks)),
+      helper: 'Park-level, not physical coverage',
       icon: Percent,
     },
   ];
 
   const smartParkKpis = [
     {
-      label: 'Confirmed Smart Parks',
+      label: 'Smart Parks',
       value: formatNumber(getSmartParksCount(parks)),
+      helper: 'Confirmed project list',
       icon: Cpu,
     },
     {
-      label: 'AI Visitor Counting Parks',
+      label: 'AI Counting Parks',
       value: formatNumber(getSmartParksWithVisitorCountingCount(parks)),
+      helper: '5 of 6 smart parks',
       icon: Bot,
     },
     {
-      label: 'AI Visitor Counting Cameras',
+      label: 'AI Counting Cameras',
       value: formatNumber(getTotalVisitorCountingCameras(parks)),
+      helper: 'Visitor counting CCTV cams',
       icon: Camera,
     },
     {
-      label: 'DMT Integrated Smart Parks',
+      label: 'DMT Integrated',
       value: formatNumber(getDmtIntegratedSmartParksCount(parks)),
+      helper: 'Confirmed smart parks',
       icon: Link,
     },
   ];
@@ -90,29 +100,32 @@ export default function KpiCards({ parks, isLoading = false }: KpiCardsProps) {
     return (
       <article
         key={kpi.label}
-        className="min-w-0 overflow-hidden rounded-xl border border-white/10 bg-slate-950/55 p-3"
+        className="grid h-[124px] min-w-0 grid-rows-[34px_1fr_24px] overflow-hidden rounded-xl border border-white/10 bg-slate-950/55 p-3"
       >
-        <div className="flex items-start justify-between gap-2">
-          <p className="text-xs font-semibold leading-4 text-slate-400">{kpi.label}</p>
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-cyan-300/15 bg-cyan-300/10 text-cyan-100">
-            <Icon className="h-4 w-4" aria-hidden="true" />
+        <div className="flex min-w-0 items-start justify-between gap-2">
+          <p className="min-w-0 truncate text-xs font-semibold leading-4 text-slate-300" title={kpi.label}>
+            {kpi.label}
+          </p>
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-cyan-300/15 bg-cyan-300/10 text-cyan-100">
+            <Icon className="h-3.5 w-3.5" aria-hidden="true" />
           </span>
         </div>
-        <p className="mt-2 truncate text-2xl font-bold text-white">{isLoading ? '-' : kpi.value}</p>
+        <p className="flex items-center truncate text-3xl font-bold leading-none text-white">{isLoading ? '-' : kpi.value}</p>
+        <p className="line-clamp-2 text-[11px] leading-3 text-slate-500">{kpi.helper}</p>
       </article>
     );
   }
 
   return (
     <section className="grid max-w-full grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
-      <div className="rounded-2xl border border-white/10 bg-slate-900/75 p-4 shadow-xl shadow-black/20">
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-300">Primary CCTV KPIs</h2>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5 xl:grid-cols-5">{primaryKpis.map(renderCard)}</div>
+      <div className="rounded-2xl border border-white/10 bg-slate-900/75 p-3.5 shadow-xl shadow-black/20">
+        <h2 className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-slate-400">Primary CCTV KPIs</h2>
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-5 xl:grid-cols-5">{primaryKpis.map(renderCard)}</div>
       </div>
 
-      <div className="rounded-2xl border border-white/10 bg-slate-900/75 p-4 shadow-xl shadow-black/20">
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-300">Smart Parks KPIs</h2>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4">{smartParkKpis.map(renderCard)}</div>
+      <div className="rounded-2xl border border-white/10 bg-slate-900/75 p-3.5 shadow-xl shadow-black/20">
+        <h2 className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-slate-400">Smart Parks KPIs</h2>
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4">{smartParkKpis.map(renderCard)}</div>
       </div>
     </section>
   );
