@@ -11,6 +11,7 @@ type TopPriorityGapsProps = {
 
 type MunicipalityFilter = 'All' | 'ADM' | 'AAM' | 'DRM';
 type GapTypeFilter = 'All' | 'CCTV' | 'GIS' | 'Integration Not Confirmed';
+type PriorityFilter = 'All' | 'High' | 'Medium' | 'Low';
 
 function translateIssue(issue: string): string {
   const issueMap: Record<string, string> = {
@@ -31,17 +32,17 @@ function displayGapCategory(gapCategory: string): string {
   return gapCategory === 'Integration' ? 'Integration Not Confirmed' : gapCategory;
 }
 
-function recommendationForGap(gap: GapAnalysisRecord): string {
+function requiredActionForGap(gap: GapAnalysisRecord): string {
   if (gap.gapCategory === 'CCTV') {
-    return 'Assess CCTV installation priority based on park size, location, visitor volume, and security needs.';
+    return 'Assess CCTV need';
   }
 
   if (gap.gapCategory === 'GIS') {
-    return 'Validate park coordinates and update GIS location data for accurate map visualization.';
+    return 'Validate GIS location';
   }
 
   if (gap.gapCategory === 'Integration') {
-    return 'Confirm DMT integration status for the park in the next data validation cycle.';
+    return 'Confirm integration status';
   }
 
   const recommendationMap: Record<string, string> = {
@@ -104,6 +105,9 @@ export function getBalancedTopPriorityGaps(gaps: GapAnalysisRecord[]): GapAnalys
 export default function TopPriorityGaps({ parks, isLoading = false }: TopPriorityGapsProps) {
   const [municipality, setMunicipality] = useState<MunicipalityFilter>('All');
   const [gapType, setGapType] = useState<GapTypeFilter>('All');
+  const [priority, setPriority] = useState<PriorityFilter>('All');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showGuidance, setShowGuidance] = useState(false);
   const [showFullTable, setShowFullTable] = useState(false);
   const [showTable, setShowTable] = useState(true);
   const smartParkSourceRows = useMemo(
@@ -118,15 +122,19 @@ export default function TopPriorityGaps({ parks, isLoading = false }: TopPriorit
     [parks, smartParkSourceRows],
   );
   const filteredGaps = useMemo(() => {
+    const normalizedSearchTerm = searchTerm.trim().toLowerCase();
+
     return allGaps.filter((gap) => {
       const gapTypeMatches =
         gapType === 'All' ||
         gap.gapCategory === gapType ||
         (gapType === 'Integration Not Confirmed' && gap.gapCategory === 'Integration');
+      const priorityMatches = priority === 'All' || gap.priority === priority;
+      const searchMatches = !normalizedSearchTerm || gap.parkName.toLowerCase().includes(normalizedSearchTerm);
 
-      return (municipality === 'All' || gap.municipality === municipality) && gapTypeMatches;
+      return (municipality === 'All' || gap.municipality === municipality) && gapTypeMatches && priorityMatches && searchMatches;
     });
-  }, [allGaps, gapType, municipality]);
+  }, [allGaps, gapType, municipality, priority, searchTerm]);
   const gaps = useMemo(() => {
     if (municipality === 'All') {
       return getBalancedTopPriorityGaps(filteredGaps);
@@ -180,6 +188,27 @@ export default function TopPriorityGaps({ parks, isLoading = false }: TopPriorit
               <option value="Integration Not Confirmed">Integration Not Confirmed</option>
             </select>
           </label>
+          <label className="flex items-center gap-2 text-sm text-slate-300">
+            Priority
+            <select
+              className="rounded-xl border border-white/10 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none focus:border-cyan-300/50"
+              value={priority}
+              onChange={(event) => setPriority(event.target.value as PriorityFilter)}
+            >
+              <option value="All">All</option>
+              <option value="High">High</option>
+              <option value="Medium">Medium</option>
+              <option value="Low">Low</option>
+            </select>
+          </label>
+          <input
+            className="min-w-[180px] rounded-xl border border-white/10 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none placeholder:text-slate-600 focus:border-cyan-300/50"
+            type="search"
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            placeholder="Search park name"
+            aria-label="Search by park name"
+          />
           <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-amber-300/20 bg-amber-300/10 text-amber-100">
             <ListChecks className="h-5 w-5" aria-hidden="true" />
           </span>
@@ -214,10 +243,45 @@ export default function TopPriorityGaps({ parks, isLoading = false }: TopPriorit
       <p className="mt-4 rounded-xl border border-cyan-300/15 bg-cyan-300/10 px-4 py-3 text-sm leading-6 text-cyan-50">
         Actions are generated from the current inventory and can be filtered by municipality and gap type.
       </p>
+
+      <div className="mt-3 rounded-xl border border-white/10 bg-slate-950/60 p-3">
+        <button
+          className="flex w-full items-center justify-between gap-3 text-left text-sm font-semibold text-white"
+          type="button"
+          onClick={() => setShowGuidance((current) => !current)}
+          aria-expanded={showGuidance}
+        >
+          Action Guidance
+          <span className="text-xs text-slate-400">{showGuidance ? 'Hide' : 'Show'}</span>
+        </button>
+        {showGuidance && (
+          <div className="mt-3 grid gap-2 text-xs leading-5 text-slate-300 lg:grid-cols-3">
+            <p>
+              <span className="font-semibold text-cyan-100">CCTV:</span> Assess CCTV installation priority based on
+              park size, location, visitor volume, and security needs.
+            </p>
+            <p>
+              <span className="font-semibold text-cyan-100">GIS:</span> Validate park coordinates and update GIS
+              location data for accurate map visualization.
+            </p>
+            <p>
+              <span className="font-semibold text-cyan-100">Integration:</span> Confirm DMT integration status for the
+              park in the next data validation cycle.
+            </p>
+          </div>
+        )}
+      </div>
         </>
       }
     >
       {showTable && (
+      <>
+      <div className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-slate-950/50 px-4 py-2 text-xs text-slate-400">
+        <span>
+          Showing {visibleGaps.length} of {allGaps.length} actions
+        </span>
+        <span>{filteredGaps.length} actions after filtering</span>
+      </div>
       <div className="max-w-full overflow-x-auto rounded-xl border border-white/10">
         <table className="w-full min-w-[980px] border-collapse text-left text-sm">
           <thead className="bg-slate-950 text-slate-300">
@@ -226,7 +290,7 @@ export default function TopPriorityGaps({ parks, isLoading = false }: TopPriorit
               <th className="whitespace-nowrap px-4 py-3 font-semibold">Park</th>
               <th className="whitespace-nowrap px-4 py-3 font-semibold">Gap Type</th>
               <th className="whitespace-nowrap px-4 py-3 font-semibold">Issue</th>
-              <th className="whitespace-nowrap px-4 py-3 font-semibold">Recommendation</th>
+              <th className="whitespace-nowrap px-4 py-3 font-semibold">Required Action</th>
               <th className="whitespace-nowrap px-4 py-3 font-semibold">Priority</th>
             </tr>
           </thead>
@@ -248,8 +312,8 @@ export default function TopPriorityGaps({ parks, isLoading = false }: TopPriorit
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 text-slate-300">{displayGapCategory(gap.gapCategory)}</td>
                   <td className="min-w-[240px] px-4 py-3 leading-6 text-slate-200">{translateIssue(gap.issue)}</td>
-                  <td className="min-w-[360px] px-4 py-3 leading-6 text-slate-300">
-                    {recommendationForGap(gap)}
+                  <td className="whitespace-nowrap px-4 py-3 text-slate-300">
+                    {requiredActionForGap(gap)}
                   </td>
                   <td className="whitespace-nowrap px-4 py-3">
                     <span className="rounded-full border border-red-400/30 bg-red-500/15 px-3 py-1 text-xs font-semibold text-red-100">
@@ -269,6 +333,7 @@ export default function TopPriorityGaps({ parks, isLoading = false }: TopPriorit
           </tbody>
         </table>
       </div>
+      </>
       )}
     </CollapsibleSection>
   );
