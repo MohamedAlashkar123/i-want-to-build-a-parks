@@ -20,6 +20,34 @@ type MapStyleOption = {
   style: string;
 };
 
+type FocusArea = 'All Plotted Parks' | 'ADM' | 'AAM' | 'DRM' | 'Smart Parks';
+
+type ParkFeatureProperties = {
+  id: string;
+  parkName: string;
+  municipality: string;
+  region: string;
+  parkType: string;
+  hasCctvSystem: ParkRecord['hasCctvSystem'];
+  totalCameras: number;
+  hasMaintenanceContract: ParkRecord['hasMaintenanceContract'];
+  maintenanceCompany: string;
+  hasDrawings: ParkRecord['hasDrawings'];
+  isSmartPark: boolean;
+  smartParkCapabilities: string;
+  aiVisitorCountingAvailable: boolean;
+  aiVisitorCountingCameraCount: number;
+  smartParkNote: string;
+  dmtIntegrationStatus: string;
+  dmtIntegrationScope: string;
+  gisValidationStatus: string;
+  gisValidationReason: string;
+  markerColor: MarkerColor;
+  isNeedsGisReview: boolean;
+};
+
+type ParkFeatureCollection = GeoJSON.FeatureCollection<GeoJSON.Point, ParkFeatureProperties>;
+
 const mapboxToken = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
 
 const mapStyleOptions: MapStyleOption[] = [
@@ -30,6 +58,16 @@ const mapStyleOptions: MapStyleOption[] = [
 ];
 
 const defaultMapStyle = 'mapbox://styles/mapbox/light-v11';
+const defaultMapCenter: [number, number] = [54.3773, 24.4539];
+const parksSourceId = 'parks-source';
+const parksGlowLayerId = 'parks-glow-layer';
+const parksCirclesLayerId = 'parks-circles-layer';
+const smartParksRingLayerId = 'smart-parks-ring-layer';
+const emptyFeatureCollection: ParkFeatureCollection = {
+  type: 'FeatureCollection',
+  features: [],
+};
+const focusAreas: FocusArea[] = ['All Plotted Parks', 'ADM', 'AAM', 'DRM', 'Smart Parks'];
 
 function formatNumber(value: number): string {
   return new Intl.NumberFormat('en-US').format(value);
@@ -77,22 +115,6 @@ function markerColorForCctv(status: ParkRecord['hasCctvSystem']): MarkerColor {
   return 'gray';
 }
 
-function markerClassName(color: MarkerColor): string {
-  if (color === 'orange') {
-    return 'bg-orange-400 shadow-[0_0_0_4px_rgba(251,146,60,0.28),0_0_16px_rgba(251,146,60,0.46)] hover:bg-orange-300';
-  }
-
-  if (color === 'green') {
-    return 'bg-emerald-400 shadow-[0_0_0_4px_rgba(52,211,153,0.24),0_0_14px_rgba(52,211,153,0.38)] hover:bg-emerald-300';
-  }
-
-  if (color === 'red') {
-    return 'bg-red-500 shadow-[0_0_0_4px_rgba(239,68,68,0.24),0_0_14px_rgba(239,68,68,0.38)] hover:bg-red-400';
-  }
-
-  return 'bg-slate-300 shadow-[0_0_0_4px_rgba(148,163,184,0.24),0_0_14px_rgba(148,163,184,0.34)] hover:bg-slate-100';
-}
-
 function badgeClassForStatus(status: 'Yes' | 'No' | 'Unknown', warningForNo = false): string {
   if (status === 'Yes') {
     return 'popup-badge popup-badge-green';
@@ -133,7 +155,7 @@ function createStatusBadge(value: ParkRecord['hasCctvSystem'] | ParkRecord['hasM
   return badge;
 }
 
-function createPopupContent(park: PlottedPark): HTMLElement {
+function createPopupContent(park: ParkFeatureProperties): HTMLElement {
   const container = document.createElement('div');
   container.className = 'executive-map-popup text-left text-sm';
 
@@ -154,7 +176,7 @@ function createPopupContent(park: PlottedPark): HTMLElement {
     container.appendChild(smartBadge);
   }
 
-  if (isNeedsGisReview(park)) {
+  if (park.isNeedsGisReview) {
     const warningBadge = document.createElement('span');
     warningBadge.className = 'popup-warning-badge';
     warningBadge.textContent = 'Needs GIS Review';
@@ -163,17 +185,16 @@ function createPopupContent(park: PlottedPark): HTMLElement {
 
   const rows = document.createElement('div');
   rows.className = 'popup-rows';
+  rows.appendChild(createPopupRow('Marker Type', 'Park'));
   rows.appendChild(createPopupRow('CCTV Status', createStatusBadge(park.hasCctvSystem)));
   rows.appendChild(createPopupRow('Total Cameras', formatNumber(park.totalCameras)));
   rows.appendChild(createPopupRow('Maintenance', createStatusBadge(park.hasMaintenanceContract, true)));
   rows.appendChild(createPopupRow('Smart Park', park.isSmartPark ? createStatusBadge('Yes') : '-'));
   rows.appendChild(createPopupRow('DMT Integration', park.isSmartPark ? 'Integrated' : 'Not confirmed'));
   rows.appendChild(createPopupRow('Camera Setup', 'Standalone'));
-  rows.appendChild(createPopupRow('Park Type', formatOptional(park.parkType)));
-  rows.appendChild(createPopupRow('Maintenance Company', formatOptional(park.maintenanceCompany)));
 
   if (park.isSmartPark) {
-    rows.appendChild(createPopupRow('Capabilities', formatOptional(park.smartParkCapabilities?.join(', '))));
+    rows.appendChild(createPopupRow('Capabilities', formatOptional(park.smartParkCapabilities)));
     rows.appendChild(createPopupRow('AI Visitor Counting', park.aiVisitorCountingAvailable ? 'Yes' : 'No'));
     rows.appendChild(
       createPopupRow(
@@ -186,7 +207,7 @@ function createPopupContent(park: PlottedPark): HTMLElement {
     }
   }
 
-  if (isNeedsGisReview(park)) {
+  if (park.isNeedsGisReview) {
     rows.appendChild(createPopupRow('GIS Review Reason', formatOptional(park.gisValidationReason)));
   }
 
@@ -194,40 +215,199 @@ function createPopupContent(park: PlottedPark): HTMLElement {
   return container;
 }
 
+function buildParkFeatureCollection(parks: PlottedPark[]): ParkFeatureCollection {
+  return {
+    type: 'FeatureCollection',
+    features: parks.map((park) => {
+      const needsReview = isNeedsGisReview(park);
+
+      return {
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: [park.longitude, park.latitude],
+        },
+        properties: {
+          id: park.id,
+          parkName: park.parkName,
+          municipality: park.municipality,
+          region: formatOptional(park.region),
+          parkType: formatOptional(park.parkType),
+          hasCctvSystem: park.hasCctvSystem,
+          totalCameras: park.totalCameras,
+          hasMaintenanceContract: park.hasMaintenanceContract,
+          maintenanceCompany: formatOptional(park.maintenanceCompany),
+          hasDrawings: park.hasDrawings,
+          isSmartPark: park.isSmartPark === true,
+          smartParkCapabilities: formatOptional(park.smartParkCapabilities?.join(', ')),
+          aiVisitorCountingAvailable: park.aiVisitorCountingAvailable === true,
+          aiVisitorCountingCameraCount: park.aiVisitorCountingCameraCount ?? 0,
+          smartParkNote: formatOptional(park.smartParkNote),
+          dmtIntegrationStatus: park.dmtIntegrationStatus,
+          dmtIntegrationScope: formatOptional(park.dmtIntegrationScope),
+          gisValidationStatus: formatOptional(park.gisValidationStatus),
+          gisValidationReason: formatOptional(park.gisValidationReason),
+          markerColor: needsReview ? 'orange' : markerColorForCctv(park.hasCctvSystem),
+          isNeedsGisReview: needsReview,
+        },
+      };
+    }),
+  };
+}
+
+function getMarkerColorExpression(): mapboxgl.Expression {
+  return [
+    'match',
+    ['get', 'markerColor'],
+    'green',
+    '#34d399',
+    'red',
+    '#ef4444',
+    'orange',
+    '#fb923c',
+    'gray',
+    '#94a3b8',
+    '#94a3b8',
+  ];
+}
+
+function addOrUpdateParkLayers(map: mapboxgl.Map, data: ParkFeatureCollection, showSmartParkIndicators: boolean) {
+  const source = map.getSource(parksSourceId);
+
+  if (source) {
+    (source as mapboxgl.GeoJSONSource).setData(data);
+  } else {
+    map.addSource(parksSourceId, {
+      type: 'geojson',
+      data,
+    });
+  }
+
+  if (!map.getLayer(parksGlowLayerId)) {
+    map.addLayer({
+      id: parksGlowLayerId,
+      type: 'circle',
+      source: parksSourceId,
+      paint: {
+        'circle-radius': 16,
+        'circle-color': getMarkerColorExpression(),
+        'circle-opacity': 0.25,
+        'circle-stroke-width': 0,
+      },
+    });
+  }
+
+  if (!map.getLayer(smartParksRingLayerId)) {
+    map.addLayer({
+      id: smartParksRingLayerId,
+      type: 'circle',
+      source: parksSourceId,
+      filter: ['==', ['get', 'isSmartPark'], true],
+      paint: {
+        'circle-radius': 12,
+        'circle-color': 'rgba(0, 0, 0, 0)',
+        'circle-opacity': 0,
+        'circle-stroke-color': '#a78bfa',
+        'circle-stroke-opacity': 0.95,
+        'circle-stroke-width': 2.5,
+      },
+    });
+  }
+
+  if (!map.getLayer(parksCirclesLayerId)) {
+    map.addLayer({
+      id: parksCirclesLayerId,
+      type: 'circle',
+      source: parksSourceId,
+      paint: {
+        'circle-radius': 7.5,
+        'circle-color': getMarkerColorExpression(),
+        'circle-opacity': 0.98,
+        'circle-stroke-color': '#020617',
+        'circle-stroke-width': 1.5,
+      },
+    });
+  }
+
+  if (map.getLayer(smartParksRingLayerId)) {
+    map.setLayoutProperty(smartParksRingLayerId, 'visibility', showSmartParkIndicators ? 'visible' : 'none');
+  }
+}
+
 export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
-  const markersRef = useRef<mapboxgl.Marker[]>([]);
+  const popupRef = useRef<mapboxgl.Popup | null>(null);
+  const parkDataRef = useRef<ParkFeatureCollection>(emptyFeatureCollection);
+  const showSmartParkIndicatorsRef = useRef(true);
   const [activeStyle, setActiveStyle] = useState(defaultMapStyle);
   const [showSuspiciousCoordinates, setShowSuspiciousCoordinates] = useState(false);
   const [showSmartParkIndicators, setShowSmartParkIndicators] = useState(true);
-  const [showCctvStatusMarkers, setShowCctvStatusMarkers] = useState(true);
+  const [showParksWithCctv, setShowParksWithCctv] = useState(true);
+  const [showParksWithoutCctv, setShowParksWithoutCctv] = useState(true);
+  const [showUnknownCctv, setShowUnknownCctv] = useState(true);
+  const [focusArea, setFocusArea] = useState<FocusArea>('All Plotted Parks');
   const [isStyleMenuOpen, setIsStyleMenuOpen] = useState(false);
 
   const mapReadyParks = useMemo(() => parks.filter(isValidUaeCoordinate), [parks]);
   const needsReviewCount = useMemo(() => mapReadyParks.filter(isNeedsGisReview).length, [mapReadyParks]);
   const plottedParks = useMemo(
     () =>
-      showCctvStatusMarkers
-        ? mapReadyParks.filter((park) => showSuspiciousCoordinates || !isNeedsGisReview(park))
-        : [],
-    [mapReadyParks, showCctvStatusMarkers, showSuspiciousCoordinates],
-  );
+      mapReadyParks.filter((park) => {
+        if (!showSuspiciousCoordinates && isNeedsGisReview(park)) {
+          return false;
+        }
 
-  function fitToPlottedParks() {
+        if (park.hasCctvSystem === 'Yes') {
+          return showParksWithCctv;
+        }
+
+        if (park.hasCctvSystem === 'No') {
+          return showParksWithoutCctv;
+        }
+
+        return showUnknownCctv;
+      }),
+    [mapReadyParks, showParksWithCctv, showParksWithoutCctv, showSuspiciousCoordinates, showUnknownCctv],
+  );
+  const parkFeatureCollection = useMemo(() => buildParkFeatureCollection(plottedParks), [plottedParks]);
+
+  function fitToParks(parksToFit: PlottedPark[], duration = 700) {
     const map = mapRef.current;
 
-    if (!map || plottedParks.length === 0) {
+    if (!map || parksToFit.length === 0) {
+      console.warn('No visible park markers are available for the selected map focus.');
       return;
     }
 
     const bounds = new mapboxgl.LngLatBounds();
-    plottedParks.forEach((park) => bounds.extend([park.longitude, park.latitude]));
-    map.fitBounds(bounds, { padding: 72, maxZoom: 12, duration: 700 });
+    parksToFit.forEach((park) => bounds.extend([park.longitude, park.latitude]));
+    map.fitBounds(bounds, { padding: 72, maxZoom: 12, duration });
+  }
+
+  function getParksForFocus(area: FocusArea): PlottedPark[] {
+    if (area === 'Smart Parks') {
+      return plottedParks.filter((park) => park.isSmartPark);
+    }
+
+    if (area === 'ADM' || area === 'AAM' || area === 'DRM') {
+      return plottedParks.filter((park) => park.municipality === area);
+    }
+
+    return plottedParks;
+  }
+
+  function fitToPlottedParks() {
+    fitToParks(getParksForFocus(focusArea));
   }
 
   function resetView() {
-    mapRef.current?.flyTo({ center: [54.3773, 24.4539], zoom: 8.5, duration: 700 });
+    mapRef.current?.flyTo({ center: defaultMapCenter, zoom: 8.5, duration: 700 });
+  }
+
+  function handleFocusAreaChange(area: FocusArea) {
+    setFocusArea(area);
+    fitToParks(getParksForFocus(area));
   }
 
   function changeMapStyle(style: string) {
@@ -249,8 +429,9 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
     const bearing = map.getBearing();
     const pitch = map.getPitch();
     map.setStyle(style);
-    map.once('styledata', () => {
+    map.once('style.load', () => {
       map.jumpTo({ center, zoom, bearing, pitch });
+      addOrUpdateParkLayers(map, parkDataRef.current, showSmartParkIndicatorsRef.current);
       map.resize();
     });
   }
@@ -264,7 +445,7 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
     const map = new mapboxgl.Map({
       container: mapContainerRef.current,
       style: defaultMapStyle,
-      center: [54.3773, 24.4539],
+      center: defaultMapCenter,
       zoom: 8.5,
       attributionControl: false,
     });
@@ -273,6 +454,44 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
     map.addControl(new mapboxgl.AttributionControl({ compact: true }), 'bottom-right');
     map.on('error', (event) => {
       console.error('Mapbox failed to load:', event.error);
+    });
+    map.on('load', () => {
+      addOrUpdateParkLayers(map, parkDataRef.current, showSmartParkIndicatorsRef.current);
+      map.resize();
+
+      map.on('click', parksCirclesLayerId, (event) => {
+        const feature = event.features?.[0];
+
+        if (!feature || feature.geometry.type !== 'Point') {
+          return;
+        }
+
+        const coordinates = feature.geometry.coordinates as [number, number];
+        const properties = feature.properties as ParkFeatureProperties | undefined;
+
+        if (!properties) {
+          return;
+        }
+
+        popupRef.current?.remove();
+        popupRef.current = new mapboxgl.Popup({
+          closeButton: true,
+          closeOnClick: true,
+          maxWidth: '300px',
+          offset: 14,
+        })
+          .setLngLat(coordinates)
+          .setDOMContent(createPopupContent(properties))
+          .addTo(map);
+      });
+
+      map.on('mouseenter', parksCirclesLayerId, () => {
+        map.getCanvas().style.cursor = 'pointer';
+      });
+
+      map.on('mouseleave', parksCirclesLayerId, () => {
+        map.getCanvas().style.cursor = '';
+      });
     });
 
     map.resize();
@@ -287,77 +506,30 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
       window.clearTimeout(resizeTimeout);
       window.removeEventListener('resize', handleWindowResize);
       resizeObserver.disconnect();
-      markersRef.current.forEach((marker) => marker.remove());
-      markersRef.current = [];
+      popupRef.current?.remove();
+      popupRef.current = null;
       map.remove();
       mapRef.current = null;
     };
   }, []);
 
   useEffect(() => {
+    parkDataRef.current = parkFeatureCollection;
+    showSmartParkIndicatorsRef.current = showSmartParkIndicators;
+
     const map = mapRef.current;
 
-    if (!map) {
+    if (!map || !map.isStyleLoaded()) {
       return;
     }
 
-    markersRef.current.forEach((marker) => marker.remove());
-    markersRef.current = [];
-
-    plottedParks.forEach((park) => {
-      const markerElement = document.createElement('button');
-      markerElement.type = 'button';
-      markerElement.className = `relative h-5 w-5 cursor-pointer rounded-full border-2 border-slate-950 transition duration-150 hover:scale-110 ${
-        park.isSmartPark && showSmartParkIndicators ? 'ring-2 ring-violet-300 ring-offset-2 ring-offset-slate-950' : ''
-      } ${markerClassName(
-        isNeedsGisReview(park) ? 'orange' : markerColorForCctv(park.hasCctvSystem),
-      )}`;
-      markerElement.setAttribute('aria-label', `${park.parkName} marker`);
-      markerElement.style.pointerEvents = 'auto';
-
-      if (park.isSmartPark && showSmartParkIndicators) {
-        const smartBadge = document.createElement('span');
-        smartBadge.className =
-          'pointer-events-none absolute -right-1.5 -top-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full border border-slate-950 bg-violet-400 text-[9px] font-black leading-none text-white';
-        smartBadge.textContent = '★';
-        markerElement.appendChild(smartBadge);
-      }
-
-      const popup = new mapboxgl.Popup({
-        offset: 24,
-        closeButton: true,
-        closeOnClick: false,
-        closeOnMove: false,
-        maxWidth: '300px',
-      }).setDOMContent(createPopupContent(park));
-
-      const openPopup = (event: MouseEvent) => {
-        event.preventDefault();
-        event.stopPropagation();
-        popup.setLngLat([park.longitude, park.latitude]).addTo(map);
-      };
-
-      markerElement.addEventListener('pointerdown', (event) => {
-        event.stopPropagation();
-      });
-      markerElement.addEventListener('click', (event) => {
-        openPopup(event);
-      });
-
-      const marker = new mapboxgl.Marker({ element: markerElement, anchor: 'center' })
-        .setLngLat([park.longitude, park.latitude])
-        .addTo(map);
-
-      markersRef.current.push(marker);
-    });
+    addOrUpdateParkLayers(map, parkFeatureCollection, showSmartParkIndicators);
 
     if (plottedParks.length > 0) {
-      const bounds = new mapboxgl.LngLatBounds();
-      plottedParks.forEach((park) => bounds.extend([park.longitude, park.latitude]));
       map.resize();
-      map.fitBounds(bounds, { padding: 72, maxZoom: 12, duration: 0 });
+      fitToParks(plottedParks, 0);
     }
-  }, [plottedParks, showSmartParkIndicators]);
+  }, [parkFeatureCollection, plottedParks, showSmartParkIndicators]);
 
   return (
     <section className="overflow-hidden rounded-2xl border border-white/10 bg-slate-900/75 shadow-xl shadow-black/20">
@@ -441,19 +613,29 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
                 <p className="px-2 pb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500">Map Display</p>
                 {[
                   {
-                    label: 'Show GIS Review Markers',
-                    checked: showSuspiciousCoordinates,
-                    onChange: setShowSuspiciousCoordinates,
+                    label: 'Parks with CCTV',
+                    checked: showParksWithCctv,
+                    onChange: setShowParksWithCctv,
                   },
                   {
-                    label: 'Show Smart Park Indicators',
+                    label: 'Parks without CCTV',
+                    checked: showParksWithoutCctv,
+                    onChange: setShowParksWithoutCctv,
+                  },
+                  {
+                    label: 'Unknown CCTV status',
+                    checked: showUnknownCctv,
+                    onChange: setShowUnknownCctv,
+                  },
+                  {
+                    label: 'Confirmed Smart Parks',
                     checked: showSmartParkIndicators,
                     onChange: setShowSmartParkIndicators,
                   },
                   {
-                    label: 'Show CCTV Status Markers',
-                    checked: showCctvStatusMarkers,
-                    onChange: setShowCctvStatusMarkers,
+                    label: 'Needs GIS Review',
+                    checked: showSuspiciousCoordinates,
+                    onChange: setShowSuspiciousCoordinates,
                   },
                 ].map((option) => (
                   <label
@@ -469,6 +651,21 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
                     />
                   </label>
                 ))}
+                <div className="my-2 border-t border-white/10" />
+                <p className="px-2 pb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500">Focus Area</p>
+                <select
+                  className="w-full rounded-md border border-white/10 bg-slate-950 px-2 py-1.5 text-[11px] font-semibold text-slate-200 outline-none transition focus:border-cyan-300/50"
+                  value={focusArea}
+                  onChange={(event) => handleFocusAreaChange(event.target.value as FocusArea)}
+                  title="Focus map area"
+                  aria-label="Focus map area"
+                >
+                  {focusAreas.map((area) => (
+                    <option key={area} value={area}>
+                      {area}
+                    </option>
+                  ))}
+                </select>
               </div>
             )}
           </div>
@@ -497,13 +694,17 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
               <span className="h-3 w-3 rounded-full border-2 border-violet-300 bg-transparent" />
               Purple ring: Confirmed Smart Park
             </p>
+            <p className="border-t border-white/10 pt-1.5 text-[11px] leading-4 text-cyan-50">
+              Markers represent parks, not individual cameras.
+            </p>
           </div>
         </div>
       </div>
 
       <p className="border-t border-white/10 bg-slate-950/60 px-4 py-2.5 text-xs leading-6 text-cyan-50">
-        Only parks with valid Latitude/Longitude are plotted. Projected X/Y coordinates are available for some parks,
-        but require CRS/EPSG confirmation before safe conversion to Latitude/Longitude.
+        Map markers represent parks, not individual cameras. Only parks with valid Latitude/Longitude are plotted.
+        Projected X/Y coordinates are available for some parks, but require CRS/EPSG confirmation before safe conversion
+        to Latitude/Longitude.
       </p>
     </section>
   );
