@@ -11,6 +11,7 @@
   "dependencies": {
     "@vitejs/plugin-react": "latest",
     "exceljs": "^4.4.0",
+    "framer-motion": "^12.38.0",
     "leaflet": "latest",
     "lucide-react": "^1.14.0",
     "mapbox-gl": "^3.23.1",

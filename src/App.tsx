@@ -1,3 +1,4 @@
+import { motion, useReducedMotion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import CamerasByMunicipalityChart from './components/CamerasByMunicipalityChart';
 import CctvAvailabilityByMunicipalityChart from './components/CctvAvailabilityByMunicipalityChart';
@@ -20,6 +21,7 @@ type NormalizedParksState = {
 };
 
 export default function App() {
+  const shouldReduceMotion = useReducedMotion();
   const [normalizedParksState, setNormalizedParksState] = useState<NormalizedParksState>({
     isLoading: true,
     parks: [],
@@ -57,11 +59,28 @@ export default function App() {
   return (
     <main className="min-h-screen bg-slate-950 p-4 text-slate-100 lg:p-5">
       <div className="mx-auto max-w-[1680px] space-y-4">
-        <Header />
+        <motion.div
+          initial={shouldReduceMotion ? false : { opacity: 0 }}
+          animate={shouldReduceMotion ? undefined : { opacity: 1 }}
+          transition={{ duration: 0.4 }}
+        >
+          <Header />
+        </motion.div>
 
-        <KpiCards parks={normalizedParksState.parks} isLoading={normalizedParksState.isLoading} />
+        <motion.div
+          initial={shouldReduceMotion ? false : { opacity: 0, y: 10 }}
+          animate={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.05 }}
+        >
+          <KpiCards parks={normalizedParksState.parks} isLoading={normalizedParksState.isLoading} />
+        </motion.div>
 
-        <section className="grid grid-cols-1 gap-4 lg:grid-cols-2 2xl:grid-cols-[320px_minmax(0,1fr)_320px]">
+        <motion.section
+          className="grid grid-cols-1 gap-4 lg:grid-cols-2 2xl:grid-cols-[320px_minmax(0,1fr)_320px]"
+          initial={shouldReduceMotion ? false : { opacity: 0 }}
+          animate={shouldReduceMotion ? undefined : { opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+        >
           <div className="order-2 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:order-2 2xl:order-1 2xl:grid-cols-1">
             <CctvStatusChart parks={normalizedParksState.parks} />
             <CctvAvailabilityByMunicipalityChart parks={normalizedParksState.parks} />
@@ -75,17 +94,52 @@ export default function App() {
             <CamerasByMunicipalityChart parks={normalizedParksState.parks} />
             <GisDataQualityChart parks={normalizedParksState.parks} />
           </div>
-        </section>
+        </motion.section>
 
-        <ExecutiveInsightsRow parks={normalizedParksState.parks} />
+        <motion.div
+          initial={shouldReduceMotion ? false : { opacity: 0, y: 10 }}
+          whileInView={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.2 }}
+          transition={{ duration: 0.45 }}
+        >
+          <ExecutiveInsightsRow parks={normalizedParksState.parks} />
+        </motion.div>
 
-        <SmartParksByMunicipalityCard parks={normalizedParksState.parks} isLoading={normalizedParksState.isLoading} />
+        <motion.div
+          initial={shouldReduceMotion ? false : { opacity: 0, y: 10 }}
+          whileInView={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.18 }}
+          transition={{ duration: 0.45 }}
+        >
+          <SmartParksByMunicipalityCard parks={normalizedParksState.parks} isLoading={normalizedParksState.isLoading} />
+        </motion.div>
 
-        <MunicipalitySummaryTable parks={normalizedParksState.parks} isLoading={normalizedParksState.isLoading} />
+        <motion.div
+          initial={shouldReduceMotion ? false : { opacity: 0, y: 10 }}
+          whileInView={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.14 }}
+          transition={{ duration: 0.45 }}
+        >
+          <MunicipalitySummaryTable parks={normalizedParksState.parks} isLoading={normalizedParksState.isLoading} />
+        </motion.div>
 
-        <TopPriorityGaps parks={normalizedParksState.parks} isLoading={normalizedParksState.isLoading} />
+        <motion.div
+          initial={shouldReduceMotion ? false : { opacity: 0, y: 10 }}
+          whileInView={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.14 }}
+          transition={{ duration: 0.45 }}
+        >
+          <TopPriorityGaps parks={normalizedParksState.parks} isLoading={normalizedParksState.isLoading} />
+        </motion.div>
 
-        <GisConversionReadiness parks={normalizedParksState.parks} isLoading={normalizedParksState.isLoading} />
+        <motion.div
+          initial={shouldReduceMotion ? false : { opacity: 0, y: 10 }}
+          whileInView={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.14 }}
+          transition={{ duration: 0.45 }}
+        >
+          <GisConversionReadiness parks={normalizedParksState.parks} isLoading={normalizedParksState.isLoading} />
+        </motion.div>
       </div>
     </main>
   );

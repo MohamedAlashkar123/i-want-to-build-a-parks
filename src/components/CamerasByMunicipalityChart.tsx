@@ -22,7 +22,7 @@ export default function CamerasByMunicipalityChart({ parks }: CamerasByMunicipal
             <XAxis dataKey="name" tick={{ fill: '#cbd5e1', fontSize: 12 }} axisLine={false} tickLine={false} />
             <YAxis tick={{ fill: '#cbd5e1', fontSize: 12 }} axisLine={false} tickLine={false} width={44} />
             <Tooltip contentStyle={chartTooltipStyle} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
-            <Bar dataKey="value" name="Total Cameras" fill="#38bdf8" radius={[8, 8, 0, 0]} />
+            <Bar dataKey="value" name="Total Cameras" fill="#38bdf8" radius={[8, 8, 0, 0]} isAnimationActive animationDuration={700} />
           </BarChart>
         </ResponsiveContainer>
       ) : (

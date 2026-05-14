@@ -1,3 +1,4 @@
+import { motion, useReducedMotion } from 'framer-motion';
 import { Bot, Camera, Cpu, Link, MapPinned, Percent, Trees, type LucideIcon } from 'lucide-react';
 import type { ParkRecord } from '../types/park';
 import {
@@ -34,6 +35,7 @@ function formatPercentage(value: number): string {
 }
 
 export default function KpiCards({ parks, isLoading = false }: KpiCardsProps) {
+  const shouldReduceMotion = useReducedMotion();
   const primaryKpis = [
     {
       label: 'Total Parks',
@@ -98,9 +100,11 @@ export default function KpiCards({ parks, isLoading = false }: KpiCardsProps) {
     const Icon = kpi.icon;
 
     return (
-      <article
+      <motion.article
         key={kpi.label}
-        className="grid h-[124px] min-w-0 grid-rows-[34px_1fr_24px] overflow-hidden rounded-xl border border-white/10 bg-slate-950/55 p-3"
+        className="grid h-[124px] min-w-0 grid-rows-[34px_1fr_24px] overflow-hidden rounded-xl border border-white/10 bg-slate-950/55 p-3 transition-colors hover:border-cyan-300/30"
+        whileHover={shouldReduceMotion ? undefined : { y: -2 }}
+        transition={{ duration: 0.18 }}
       >
         <div className="flex min-w-0 items-start justify-between gap-2">
           <p className="min-w-0 truncate text-xs font-semibold leading-4 text-slate-300" title={kpi.label}>
@@ -112,7 +116,7 @@ export default function KpiCards({ parks, isLoading = false }: KpiCardsProps) {
         </div>
         <p className="flex items-center truncate text-3xl font-bold leading-none text-white">{isLoading ? '-' : kpi.value}</p>
         <p className="line-clamp-2 text-[11px] leading-3 text-slate-500">{kpi.helper}</p>
-      </article>
+      </motion.article>
     );
   }
 

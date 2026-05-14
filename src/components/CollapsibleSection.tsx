@@ -1,3 +1,4 @@
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 
@@ -25,6 +26,7 @@ export default function CollapsibleSection({
   hideToggle = false,
 }: CollapsibleSectionProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
+  const shouldReduceMotion = useReducedMotion();
 
   return (
     <section className="max-w-full overflow-hidden rounded-2xl border border-white/10 bg-slate-900/75 p-5 shadow-xl shadow-black/20">
@@ -42,7 +44,9 @@ export default function CollapsibleSection({
               onClick={() => setIsOpen((current) => !current)}
               aria-expanded={isOpen}
             >
-              {isOpen ? <ChevronUp className="h-4 w-4" aria-hidden="true" /> : <ChevronDown className="h-4 w-4" aria-hidden="true" />}
+              <motion.span animate={shouldReduceMotion ? undefined : { rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.18 }}>
+                {isOpen ? <ChevronUp className="h-4 w-4" aria-hidden="true" /> : <ChevronDown className="h-4 w-4" aria-hidden="true" />}
+              </motion.span>
               {isOpen ? hideText : showText}
             </button>
           )}
@@ -51,7 +55,19 @@ export default function CollapsibleSection({
 
       {summaryContent}
 
-      {isOpen && <div className="mt-4">{children}</div>}
+      <AnimatePresence initial={false}>
+        {isOpen && (
+          <motion.div
+            className="mt-4 overflow-hidden"
+            initial={shouldReduceMotion ? false : { height: 0, opacity: 0 }}
+            animate={shouldReduceMotion ? undefined : { height: 'auto', opacity: 1 }}
+            exit={shouldReduceMotion ? undefined : { height: 0, opacity: 0 }}
+            transition={{ duration: 0.28, ease: 'easeOut' }}
+          >
+            {children}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }

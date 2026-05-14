@@ -28,7 +28,16 @@ export default function CctvStatusChart({ parks }: CctvStatusChartProps) {
       {hasData ? (
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
-            <Pie data={data} dataKey="value" nameKey="name" innerRadius="58%" outerRadius="82%" paddingAngle={3}>
+            <Pie
+              data={data}
+              dataKey="value"
+              nameKey="name"
+              innerRadius="58%"
+              outerRadius="82%"
+              paddingAngle={3}
+              isAnimationActive
+              animationDuration={700}
+            >
               {data.map((entry) => (
                 <Cell key={entry.name} fill={colors[entry.name]} />
               ))}

@@ -30,7 +30,16 @@ export default function GisDataQualityChart({ parks }: GisDataQualityChartProps)
       {hasData ? (
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
-            <Pie data={data} dataKey="value" nameKey="name" innerRadius="55%" outerRadius="80%" paddingAngle={3}>
+            <Pie
+              data={data}
+              dataKey="value"
+              nameKey="name"
+              innerRadius="55%"
+              outerRadius="80%"
+              paddingAngle={3}
+              isAnimationActive
+              animationDuration={700}
+            >
               {data.map((entry) => (
                 <Cell key={entry.name} fill={colors[entry.name]} />
               ))}

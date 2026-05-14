@@ -1,3 +1,4 @@
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import mapboxgl from 'mapbox-gl';
 import { Check, Info, Layers, LocateFixed, RotateCcw } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -337,6 +338,7 @@ function addOrUpdateParkLayers(map: mapboxgl.Map, data: ParkFeatureCollection, s
 }
 
 export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
+  const shouldReduceMotion = useReducedMotion();
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const popupRef = useRef<mapboxgl.Popup | null>(null);
@@ -600,8 +602,15 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
               )}
             </button>
 
+            <AnimatePresence>
             {isStyleMenuOpen && (
-              <div className="absolute right-0 top-11 z-30 w-56 rounded-lg border border-white/10 bg-slate-950/90 p-2 shadow-xl shadow-black/30 backdrop-blur">
+              <motion.div
+                className="absolute right-0 top-11 z-30 w-56 rounded-lg border border-white/10 bg-slate-950/90 p-2 shadow-xl shadow-black/30 backdrop-blur"
+                initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.96, y: -4 }}
+                animate={shouldReduceMotion ? undefined : { opacity: 1, scale: 1, y: 0 }}
+                exit={shouldReduceMotion ? undefined : { opacity: 0, scale: 0.96, y: -4 }}
+                transition={{ duration: 0.16 }}
+              >
                 <p className="px-2 pb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500">Map Style</p>
                 {mapStyleOptions.map((option) => (
                   <button
@@ -677,8 +686,9 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
                     </option>
                   ))}
                 </select>
-              </div>
+              </motion.div>
             )}
+            </AnimatePresence>
           </div>
         </div>
 
@@ -694,8 +704,15 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
             Legend
           </button>
 
+          <AnimatePresence>
           {isLegendOpen && (
-            <div className="pointer-events-auto mt-2 w-56 rounded-xl border border-white/10 bg-slate-950/90 p-3 text-xs text-slate-300 shadow-xl shadow-black/30 backdrop-blur">
+            <motion.div
+              className="pointer-events-auto mt-2 w-56 rounded-xl border border-white/10 bg-slate-950/90 p-3 text-xs text-slate-300 shadow-xl shadow-black/30 backdrop-blur"
+              initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.96, y: 4 }}
+              animate={shouldReduceMotion ? undefined : { opacity: 1, scale: 1, y: 0 }}
+              exit={shouldReduceMotion ? undefined : { opacity: 0, scale: 0.96, y: 4 }}
+              transition={{ duration: 0.16 }}
+            >
               <div className="mb-2 flex items-center justify-between gap-2">
                 <p className="font-semibold uppercase tracking-wide text-white">Legend</p>
                 <button
@@ -729,8 +746,9 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
                   Purple ring: Smart Park
                 </p>
               </div>
-            </div>
+            </motion.div>
           )}
+          </AnimatePresence>
           </div>
       </div>
 

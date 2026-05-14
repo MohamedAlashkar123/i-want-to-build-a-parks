@@ -26,9 +26,9 @@ export default function CctvAvailabilityByMunicipalityChart({ parks }: CctvAvail
             <YAxis tick={{ fill: '#cbd5e1', fontSize: 12 }} axisLine={false} tickLine={false} width={44} />
             <Tooltip contentStyle={chartTooltipStyle} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
             <Legend wrapperStyle={chartLegendStyle} />
-            <Bar dataKey="withCctv" name="With CCTV" fill="#22c55e" radius={[6, 6, 0, 0]} />
-            <Bar dataKey="withoutCctv" name="Without CCTV" fill="#ef4444" radius={[6, 6, 0, 0]} />
-            <Bar dataKey="unknownCctv" name="Unknown" fill="#94a3b8" radius={[6, 6, 0, 0]} />
+            <Bar dataKey="withCctv" name="With CCTV" fill="#22c55e" radius={[6, 6, 0, 0]} isAnimationActive animationDuration={700} />
+            <Bar dataKey="withoutCctv" name="Without CCTV" fill="#ef4444" radius={[6, 6, 0, 0]} isAnimationActive animationDuration={700} />
+            <Bar dataKey="unknownCctv" name="Unknown" fill="#94a3b8" radius={[6, 6, 0, 0]} isAnimationActive animationDuration={700} />
           </BarChart>
         </ResponsiveContainer>
       ) : (
