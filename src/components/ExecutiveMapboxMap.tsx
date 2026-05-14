@@ -1,5 +1,5 @@
 import mapboxgl from 'mapbox-gl';
-import { Check, Layers, LocateFixed, RotateCcw } from 'lucide-react';
+import { Check, Info, Layers, LocateFixed, RotateCcw } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ParkRecord } from '../types/park';
 import { validateParkLocation } from '../utils/gisValidation';
@@ -350,6 +350,7 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
   const [showUnknownCctv, setShowUnknownCctv] = useState(true);
   const [focusArea, setFocusArea] = useState<FocusArea>(defaultFocusArea);
   const [isStyleMenuOpen, setIsStyleMenuOpen] = useState(false);
+  const [isLegendOpen, setIsLegendOpen] = useState(false);
 
   const mapReadyParks = useMemo(() => parks.filter(isValidUaeCoordinate), [parks]);
   const needsReviewCount = useMemo(() => mapReadyParks.filter(isNeedsGisReview).length, [mapReadyParks]);
@@ -681,42 +682,61 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
           </div>
         </div>
 
-        <div className="pointer-events-none absolute bottom-4 left-4 z-10 rounded-xl border border-white/10 bg-slate-950/85 p-3 shadow-xl shadow-black/30 backdrop-blur">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-white">Legend</p>
-          <div className="space-y-1.5 text-xs text-slate-300">
-            <p className="flex items-center gap-2">
-              <span className="h-3 w-3 rounded-full bg-emerald-400" />
-              Green: With CCTV
-            </p>
-            <p className="flex items-center gap-2">
-              <span className="h-3 w-3 rounded-full bg-red-500" />
-              Red: Without CCTV
-            </p>
-            <p className="flex items-center gap-2">
-              <span className="h-3 w-3 rounded-full bg-slate-400" />
-              Gray: Unknown
-            </p>
-            <p className="flex items-center gap-2">
-              <span className="h-3 w-3 rounded-full bg-orange-400" />
-              Orange: Needs GIS Review
-            </p>
-            <p className="flex items-center gap-2">
-              <span className="h-3 w-3 rounded-full border-2 border-violet-300 bg-transparent" />
-              Purple ring: Confirmed Smart Park
-            </p>
-            <p className="border-t border-white/10 pt-1.5 text-[11px] leading-4 text-cyan-50">
-              Markers represent parks, not individual cameras.
-            </p>
-            <p className="text-[11px] leading-4 text-cyan-50">
-              Some ADM locations are converted from X/Y for visualization.
-            </p>
+        <div className="absolute bottom-4 left-4 z-10">
+          <button
+            className="pointer-events-auto inline-flex items-center gap-2 rounded-lg border border-white/10 bg-slate-950/85 px-3 py-2 text-xs font-semibold text-slate-100 shadow-lg shadow-black/25 backdrop-blur transition hover:border-cyan-300/40 hover:text-white"
+            type="button"
+            onClick={() => setIsLegendOpen((current) => !current)}
+            aria-expanded={isLegendOpen}
+            aria-label="Toggle map legend"
+          >
+            <Info className="h-3.5 w-3.5" aria-hidden="true" />
+            Legend
+          </button>
+
+          {isLegendOpen && (
+            <div className="pointer-events-auto mt-2 w-56 rounded-xl border border-white/10 bg-slate-950/90 p-3 text-xs text-slate-300 shadow-xl shadow-black/30 backdrop-blur">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <p className="font-semibold uppercase tracking-wide text-white">Legend</p>
+                <button
+                  className="rounded-md px-1.5 py-0.5 text-[11px] font-semibold text-slate-400 transition hover:bg-white/10 hover:text-white"
+                  type="button"
+                  onClick={() => setIsLegendOpen(false)}
+                  aria-label="Close map legend"
+                >
+                  Close
+                </button>
+              </div>
+              <div className="space-y-1.5">
+                <p className="flex items-center gap-2">
+                  <span className="h-3 w-3 rounded-full bg-emerald-400" />
+                  Green: With CCTV
+                </p>
+                <p className="flex items-center gap-2">
+                  <span className="h-3 w-3 rounded-full bg-red-500" />
+                  Red: Without CCTV
+                </p>
+                <p className="flex items-center gap-2">
+                  <span className="h-3 w-3 rounded-full bg-slate-400" />
+                  Gray: Unknown
+                </p>
+                <p className="flex items-center gap-2">
+                  <span className="h-3 w-3 rounded-full bg-orange-400" />
+                  Orange: GIS Review
+                </p>
+                <p className="flex items-center gap-2">
+                  <span className="h-3 w-3 rounded-full border-2 border-violet-300 bg-transparent" />
+                  Purple ring: Smart Park
+                </p>
+              </div>
+            </div>
+          )}
           </div>
-        </div>
       </div>
 
-      <p className="border-t border-white/10 bg-slate-950/60 px-4 py-2.5 text-xs leading-6 text-cyan-50">
-        Map markers represent parks, not individual cameras. Only parks with valid Latitude/Longitude are plotted.
-        ADM X/Y coordinates are temporarily converted for map visualization using UTM Zone 40N.
+      <p className="flex items-center gap-2 border-t border-white/10 bg-slate-950/60 px-4 py-2 text-xs leading-5 text-cyan-50">
+        <Info className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+        Markers represent parks, not individual cameras. Some ADM locations are converted from X/Y for visualization.
       </p>
     </section>
   );
