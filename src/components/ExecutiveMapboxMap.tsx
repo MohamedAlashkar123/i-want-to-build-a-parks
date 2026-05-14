@@ -57,8 +57,9 @@ const mapStyleOptions: MapStyleOption[] = [
   { label: 'Dark', style: 'mapbox://styles/mapbox/dark-v11' },
 ];
 
-const defaultMapStyle = 'mapbox://styles/mapbox/light-v11';
+const defaultMapStyle = 'mapbox://styles/mapbox/satellite-streets-v12';
 const defaultMapCenter: [number, number] = [54.3773, 24.4539];
+const defaultFocusArea: FocusArea = 'ADM';
 const parksSourceId = 'parks-source';
 const parksGlowLayerId = 'parks-glow-layer';
 const parksCirclesLayerId = 'parks-circles-layer';
@@ -68,6 +69,7 @@ const emptyFeatureCollection: ParkFeatureCollection = {
   features: [],
 };
 const focusAreas: FocusArea[] = ['All Plotted Parks', 'ADM', 'AAM', 'DRM', 'Smart Parks'];
+const focusPadding = { top: 90, bottom: 70, left: 70, right: 70 };
 
 function formatNumber(value: number): string {
   return new Intl.NumberFormat('en-US').format(value);
@@ -346,7 +348,7 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
   const [showParksWithCctv, setShowParksWithCctv] = useState(true);
   const [showParksWithoutCctv, setShowParksWithoutCctv] = useState(true);
   const [showUnknownCctv, setShowUnknownCctv] = useState(true);
-  const [focusArea, setFocusArea] = useState<FocusArea>('All Plotted Parks');
+  const [focusArea, setFocusArea] = useState<FocusArea>(defaultFocusArea);
   const [isStyleMenuOpen, setIsStyleMenuOpen] = useState(false);
 
   const mapReadyParks = useMemo(() => parks.filter(isValidUaeCoordinate), [parks]);
@@ -382,7 +384,7 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
 
     const bounds = new mapboxgl.LngLatBounds();
     parksToFit.forEach((park) => bounds.extend([park.longitude, park.latitude]));
-    map.fitBounds(bounds, { padding: 72, maxZoom: 12, duration });
+    map.fitBounds(bounds, { padding: focusPadding, maxZoom: 12.5, duration });
   }
 
   function getParksForFocus(area: FocusArea): PlottedPark[] {
@@ -398,11 +400,19 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
   }
 
   function fitToPlottedParks() {
-    fitToParks(getParksForFocus(focusArea));
+    fitToParks(plottedParks);
   }
 
   function resetView() {
-    mapRef.current?.flyTo({ center: defaultMapCenter, zoom: 8.5, duration: 700 });
+    const admParks = getParksForFocus(defaultFocusArea);
+
+    if (admParks.length > 0) {
+      setFocusArea(defaultFocusArea);
+      fitToParks(admParks);
+      return;
+    }
+
+    fitToParks(plottedParks);
   }
 
   function handleFocusAreaChange(area: FocusArea) {
@@ -527,7 +537,7 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
 
     if (plottedParks.length > 0) {
       map.resize();
-      fitToParks(plottedParks, 0);
+      fitToParks(getParksForFocus(defaultFocusArea).length > 0 ? getParksForFocus(defaultFocusArea) : plottedParks, 0);
     }
   }, [parkFeatureCollection, plottedParks, showSmartParkIndicators]);
 
