@@ -10,6 +10,7 @@ type TopPriorityGapsProps = {
 };
 
 type MunicipalityFilter = 'All' | 'ADM' | 'AAM' | 'DRM';
+type GapTypeFilter = 'All' | 'CCTV' | 'GIS' | 'Integration Not Confirmed';
 
 function translateIssue(issue: string): string {
   const issueMap: Record<string, string> = {
@@ -26,7 +27,23 @@ function translateIssue(issue: string): string {
   return issueMap[issue] || issue;
 }
 
-function translateRecommendation(recommendation: string): string {
+function displayGapCategory(gapCategory: string): string {
+  return gapCategory === 'Integration' ? 'Integration Not Confirmed' : gapCategory;
+}
+
+function recommendationForGap(gap: GapAnalysisRecord): string {
+  if (gap.gapCategory === 'CCTV') {
+    return 'Assess CCTV installation priority based on park size, location, visitor volume, and security needs.';
+  }
+
+  if (gap.gapCategory === 'GIS') {
+    return 'Validate park coordinates and update GIS location data for accurate map visualization.';
+  }
+
+  if (gap.gapCategory === 'Integration') {
+    return 'Confirm DMT integration status for the park in the next data validation cycle.';
+  }
+
   const recommendationMap: Record<string, string> = {
     'تقييم الحاجة لتركيب نظام كاميرات حسب أهمية وموقع الحديقة':
       'Assess the need to install CCTV based on park importance and location.',
@@ -46,7 +63,7 @@ function translateRecommendation(recommendation: string): string {
       'Assess future integration with central systems based on priority and security requirements.',
   };
 
-  return recommendationMap[recommendation] || recommendation;
+  return recommendationMap[gap.recommendedAction] || gap.recommendedAction;
 }
 
 function priorityRank(gap: GapAnalysisRecord): number {
@@ -86,12 +103,30 @@ export function getBalancedTopPriorityGaps(gaps: GapAnalysisRecord[]): GapAnalys
 
 export default function TopPriorityGaps({ parks, isLoading = false }: TopPriorityGapsProps) {
   const [municipality, setMunicipality] = useState<MunicipalityFilter>('All');
+  const [gapType, setGapType] = useState<GapTypeFilter>('All');
   const [showFullTable, setShowFullTable] = useState(false);
   const [showTable, setShowTable] = useState(true);
-  const allGaps = useMemo(() => generateGapAnalysis(parks), [parks]);
+  const smartParkSourceRows = useMemo(
+    () => new Set(parks.filter((park) => park.isSmartPark).map((park) => `${park.sourceSheet}-${park.sourceRowNumber}`)),
+    [parks],
+  );
+  const allGaps = useMemo(
+    () =>
+      generateGapAnalysis(parks).filter(
+        (gap) => !(gap.gapCategory === 'Integration' && smartParkSourceRows.has(`${gap.sourceSheet}-${gap.sourceRowNumber}`)),
+      ),
+    [parks, smartParkSourceRows],
+  );
   const filteredGaps = useMemo(() => {
-    return allGaps.filter((gap) => municipality === 'All' || gap.municipality === municipality);
-  }, [allGaps, municipality]);
+    return allGaps.filter((gap) => {
+      const gapTypeMatches =
+        gapType === 'All' ||
+        gap.gapCategory === gapType ||
+        (gapType === 'Integration Not Confirmed' && gap.gapCategory === 'Integration');
+
+      return (municipality === 'All' || gap.municipality === municipality) && gapTypeMatches;
+    });
+  }, [allGaps, gapType, municipality]);
   const gaps = useMemo(() => {
     if (municipality === 'All') {
       return getBalancedTopPriorityGaps(filteredGaps);
@@ -104,17 +139,17 @@ export default function TopPriorityGaps({ parks, isLoading = false }: TopPriorit
   const gisGapsCount = filteredGaps.filter((gap) => gap.gapCategory === 'GIS').length;
   const integrationGapsCount = filteredGaps.filter((gap) => gap.gapCategory === 'Integration').length;
   const summaryItems = [
-    ['High priority gaps', highPriorityCount],
-    ['CCTV gaps', cctvGapsCount],
-    ['GIS gaps', gisGapsCount],
-    ['Integration gaps', integrationGapsCount],
+    ['High Priority', highPriorityCount],
+    ['CCTV Missing', cctvGapsCount],
+    ['GIS Pending', gisGapsCount],
+    ['Integration Not Confirmed', integrationGapsCount],
   ];
   const visibleGaps = showFullTable ? gaps : gaps.slice(0, 5);
 
   return (
     <CollapsibleSection
-      title="Top 10 Priority Gaps"
-      subtitle="Highest-priority generated gaps for executive follow-up."
+      title="Priority Improvement Actions"
+      subtitle="Highest-priority actions generated from the current inventory for executive follow-up."
       defaultOpen
       hideToggle
       actions={
@@ -130,6 +165,19 @@ export default function TopPriorityGaps({ parks, isLoading = false }: TopPriorit
               <option value="ADM">ADM</option>
               <option value="AAM">AAM</option>
               <option value="DRM">DRM</option>
+            </select>
+          </label>
+          <label className="flex items-center gap-2 text-sm text-slate-300">
+            Gap Type
+            <select
+              className="rounded-xl border border-white/10 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none focus:border-cyan-300/50"
+              value={gapType}
+              onChange={(event) => setGapType(event.target.value as GapTypeFilter)}
+            >
+              <option value="All">All</option>
+              <option value="CCTV">CCTV</option>
+              <option value="GIS">GIS</option>
+              <option value="Integration Not Confirmed">Integration Not Confirmed</option>
             </select>
           </label>
           <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-amber-300/20 bg-amber-300/10 text-amber-100">
@@ -164,7 +212,7 @@ export default function TopPriorityGaps({ parks, isLoading = false }: TopPriorit
       </div>
 
       <p className="mt-4 rounded-xl border border-cyan-300/15 bg-cyan-300/10 px-4 py-3 text-sm leading-6 text-cyan-50">
-        Top gaps are generated from the current inventory and can be filtered by municipality.
+        Actions are generated from the current inventory and can be filtered by municipality and gap type.
       </p>
         </>
       }
@@ -198,10 +246,10 @@ export default function TopPriorityGaps({ parks, isLoading = false }: TopPriorit
                   <td className="max-w-[220px] truncate px-4 py-3 text-slate-100" title={gap.parkName}>
                     {gap.parkName}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-slate-300">{gap.gapCategory}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-slate-300">{displayGapCategory(gap.gapCategory)}</td>
                   <td className="min-w-[240px] px-4 py-3 leading-6 text-slate-200">{translateIssue(gap.issue)}</td>
                   <td className="min-w-[360px] px-4 py-3 leading-6 text-slate-300">
-                    {translateRecommendation(gap.recommendedAction)}
+                    {recommendationForGap(gap)}
                   </td>
                   <td className="whitespace-nowrap px-4 py-3">
                     <span className="rounded-full border border-red-400/30 bg-red-500/15 px-3 py-1 text-xs font-semibold text-red-100">
