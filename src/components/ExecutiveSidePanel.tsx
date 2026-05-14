@@ -14,12 +14,14 @@ type ExecutiveSidePanelProps = {
 
 export default function ExecutiveSidePanel({ parks }: ExecutiveSidePanelProps) {
   const totalParks = getTotalParks(parks);
-  const needsGisReview = parks.filter((park) => park.gisValidationStatus === 'Needs Review' || park.gisValidationStatus === 'Suspicious').length;
   const validGis = parks.filter((park) => park.canPlotOnMap && park.gisValidationStatus !== 'Needs Review' && park.gisValidationStatus !== 'Suspicious').length;
   const googleMaps = parks.filter(
     (park) => park.coordinateSource === 'Google Maps' && park.canPlotOnMap && park.gisValidationStatus !== 'Needs Review' && park.gisValidationStatus !== 'Suspicious',
   ).length;
-  const projectedXy = parks.filter((park) => park.coordinateSource === 'Projected XY').length;
+  const convertedAdmXy = parks.filter((park) => park.coordinateSource === 'Converted ADM X/Y' && park.canPlotOnMap).length;
+  const projectedXy = parks.filter(
+    (park) => park.coordinateSource === 'Projected XY' || park.coordinateConversionStatus === 'Conversion Review Required',
+  ).length;
   const gisReadyPercent = totalParks === 0 ? 0 : (validGis / totalParks) * 100;
   const insights = [
     ['Confirmed smart parks', getSmartParksCount(parks)],
@@ -65,7 +67,7 @@ export default function ExecutiveSidePanel({ parks }: ExecutiveSidePanelProps) {
             {[
               ['Valid GIS', validGis],
               ['Google Maps', googleMaps],
-              ['GIS Review', needsGisReview],
+              ['Converted ADM X/Y', convertedAdmXy],
               ['X/Y Pending', projectedXy],
             ].map(([label, value]) => (
               <div key={label} className="rounded-lg bg-slate-950/60 px-3 py-2">

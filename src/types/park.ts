@@ -15,11 +15,18 @@ export interface ParkRecord {
     | 'Google Maps'
     | 'LatLng Text'
     | 'Projected XY'
+    | 'Converted ADM X/Y'
     | 'Confirmed Smart Park Coordinates'
     | 'Confirmed Smart Park GPS'
     | 'Missing'
     | 'Unknown';
-  coordinateConversionStatus?: 'Ready for Map' | 'Pending CRS Confirmation' | 'Missing' | 'Invalid';
+  coordinateConversionStatus?:
+    | 'Ready for Map'
+    | 'Converted for Map Visualization'
+    | 'Conversion Review Required'
+    | 'Pending CRS Confirmation'
+    | 'Missing'
+    | 'Invalid';
   canPlotOnMap?: boolean;
   gisValidationStatus?: 'Valid' | 'Suspicious' | 'Invalid' | 'Needs Review';
   gisValidationReason?: string;

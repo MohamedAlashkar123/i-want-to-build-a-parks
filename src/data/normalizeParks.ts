@@ -2,6 +2,7 @@ import ExcelJS from 'exceljs';
 import { excelFileName } from './loadExcel';
 import { enrichWithConfirmedSmartPark } from './confirmedSmartParks';
 import type { ParkRecord } from '../types/park';
+import { convertUtm40NToLatLng, parseProjectedXY } from '../utils/coordinateConversion';
 import { getGisValidationStatus, validateParkLocation } from '../utils/gisValidation';
 
 type Municipality = ParkRecord['municipality'];
@@ -12,6 +13,10 @@ type CoordinateConversionStatus = NonNullable<ParkRecord['coordinateConversionSt
 const mainSheetNames = ['NEW - ADM Parks', 'NEW - DRM Parks', 'New AAM Parks V2'];
 const excelFileUrl = `/${excelFileName}`;
 const projectedCoordinateIssue = 'Projected X/Y coordinates require conversion';
+
+function isWithinAdmVisualizationBounds(latitude: number, longitude: number): boolean {
+  return latitude >= 23.5 && latitude <= 25 && longitude >= 53.8 && longitude <= 55.8;
+}
 
 function normalizeText(value: unknown): string {
   return String(value ?? '')
@@ -445,6 +450,49 @@ function parseCoordinate(row: ExcelJS.Row, coordinateColumns: number[]): {
   };
 }
 
+function applyTemporaryAdmXYConversion(park: ParkRecord): ParkRecord {
+  if (
+    park.municipality !== 'ADM' ||
+    park.canPlotOnMap ||
+    !park.coordinateRaw ||
+    park.coordinateSource !== 'Projected XY'
+  ) {
+    return park;
+  }
+
+  const parsed = parseProjectedXY(park.coordinateRaw);
+
+  if (!parsed) {
+    return park;
+  }
+
+  const converted = convertUtm40NToLatLng(parsed.x, parsed.y);
+
+  if (!isWithinAdmVisualizationBounds(converted.latitude, converted.longitude)) {
+    return {
+      ...park,
+      canPlotOnMap: false,
+      coordinateConversionStatus: 'Conversion Review Required',
+      dataQualityIssues: [
+        ...park.dataQualityIssues.filter((issue) => issue !== projectedCoordinateIssue),
+        'ADM X/Y conversion review required',
+      ],
+    };
+  }
+
+  return {
+    ...park,
+    latitude: converted.latitude,
+    longitude: converted.longitude,
+    canPlotOnMap: true,
+    coordinateSource: 'Converted ADM X/Y',
+    coordinateConversionStatus: 'Converted for Map Visualization',
+    dataQualityIssues: park.dataQualityIssues.filter(
+      (issue) => issue !== projectedCoordinateIssue && issue !== 'Missing or invalid GIS coordinates',
+    ),
+  };
+}
+
 export function normalizeWorkbookToParks(workbook: ExcelJS.Workbook): ParkRecord[] {
   const parks: ParkRecord[] = [];
 
@@ -531,7 +579,8 @@ export function normalizeWorkbookToParks(workbook: ExcelJS.Workbook): ParkRecord
     });
 
   return parks.map((park) => {
-    const smartPark = enrichWithConfirmedSmartPark(park);
+    const admConvertedPark = applyTemporaryAdmXYConversion(park);
+    const smartPark = enrichWithConfirmedSmartPark(admConvertedPark);
     const validation = validateParkLocation(smartPark);
 
     return {

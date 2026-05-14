@@ -14,6 +14,7 @@ export type GisReviewRecord = {
 
 export type GisDataQualitySummary = {
   readyForMap: number;
+  convertedAdmXy: number;
   projectedXy: number;
   missingOrInvalid: number;
 };
@@ -62,6 +63,7 @@ export function getReadyForMapRecords(parks: ParkRecord[]): GisReviewRecord[] {
 export function getGisDataQualitySummary(parks: ParkRecord[]): GisDataQualitySummary {
   return {
     readyForMap: getReadyForMapRecords(parks).length,
+    convertedAdmXy: parks.filter((park) => park.coordinateSource === 'Converted ADM X/Y' && park.canPlotOnMap).length,
     projectedXy: getProjectedXYRecords(parks).length,
     missingOrInvalid: getMissingGisRecords(parks).length,
   };

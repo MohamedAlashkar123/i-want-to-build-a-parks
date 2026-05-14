@@ -124,7 +124,9 @@ export function getMunicipalitySummary(parks: ParkRecord[]): MunicipalitySummary
   return (['ADM', 'AAM', 'DRM'] as const).map((municipality) => {
     const municipalityParks = parks.filter((park) => park.municipality === municipality);
     const validGis = municipalityParks.filter(hasMapReadyCoordinates).length;
-    const projectedXy = municipalityParks.filter((park) => park.coordinateSource === 'Projected XY').length;
+    const projectedXy = municipalityParks.filter(
+      (park) => park.coordinateSource === 'Projected XY' || park.coordinateConversionStatus === 'Conversion Review Required',
+    ).length;
 
     return {
       municipality,
@@ -206,7 +208,10 @@ export function getCctvAvailabilityByMunicipalityChartData(
 export function getGisDataQualityChartData(parks: ParkRecord[]): ChartDataPoint[] {
   const readyForMap = parks.filter((park) => park.canPlotOnMap).length;
   const googleMaps = parks.filter((park) => park.coordinateSource === 'Google Maps' && park.canPlotOnMap).length;
-  const projectedXy = parks.filter((park) => park.coordinateSource === 'Projected XY').length;
+  const convertedAdmXy = parks.filter((park) => park.coordinateSource === 'Converted ADM X/Y' && park.canPlotOnMap).length;
+  const projectedXy = parks.filter(
+    (park) => park.coordinateSource === 'Projected XY' || park.coordinateConversionStatus === 'Conversion Review Required',
+  ).length;
   const missingOrInvalid = parks.filter(
     (park) =>
       !park.canPlotOnMap &&
@@ -219,7 +224,8 @@ export function getGisDataQualityChartData(parks: ParkRecord[]): ChartDataPoint[
   return [
     { name: 'Ready for Map', value: readyForMap },
     { name: 'Extracted from Google Maps', value: googleMaps },
-    { name: 'Projected X/Y Pending CRS', value: projectedXy },
+    { name: 'Converted ADM X/Y', value: convertedAdmXy },
+    { name: 'Projected X/Y Pending Review', value: projectedXy },
     { name: 'Missing or Invalid GIS', value: missingOrInvalid },
   ];
 }

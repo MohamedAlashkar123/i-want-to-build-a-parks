@@ -12,7 +12,8 @@ type GisDataQualityChartProps = {
 const colors: Record<string, string> = {
   'Ready for Map': '#22c55e',
   'Extracted from Google Maps': '#38bdf8',
-  'Projected X/Y Pending CRS': '#f59e0b',
+  'Converted ADM X/Y': '#a78bfa',
+  'Projected X/Y Pending Review': '#f59e0b',
   'Missing or Invalid GIS': '#ef4444',
 };
 
@@ -24,7 +25,7 @@ export default function GisDataQualityChart({ parks }: GisDataQualityChartProps)
     <ChartCard
       title="GIS Data Quality"
       subtitle="Coordinate readiness for executive map plotting."
-      note="Projected X/Y requires CRS/EPSG confirmation before conversion."
+      note="ADM X/Y coordinates are converted for visualization using UTM Zone 40N."
     >
       {hasData ? (
         <ResponsiveContainer width="100%" height="100%">

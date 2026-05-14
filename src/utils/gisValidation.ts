@@ -7,7 +7,7 @@ type ValidationResult = {
 };
 
 const municipalityBounds = {
-  ADM: { minLat: 23.9, maxLat: 24.8, minLng: 54.0, maxLng: 55.6 },
+  ADM: { minLat: 23.5, maxLat: 25.0, minLng: 53.8, maxLng: 55.8 },
   AAM: { minLat: 23.8, maxLat: 24.5, minLng: 55.3, maxLng: 56.3 },
   DRM: { minLat: 22.5, maxLat: 24.8, minLng: 51.5, maxLng: 54.8 },
 } as const;

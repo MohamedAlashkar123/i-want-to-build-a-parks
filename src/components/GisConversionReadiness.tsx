@@ -6,6 +6,7 @@ import {
   getProjectedXYRecords,
   type GisReviewRecord,
 } from '../utils/gisDataQuality';
+import AdmXYConversionValidation from './AdmXYConversionValidation';
 import CollapsibleSection from './CollapsibleSection';
 
 type GisConversionReadinessProps = {
@@ -110,14 +111,15 @@ export default function GisConversionReadiness({ parks, isLoading = false }: Gis
 
   const summaryCards = [
     ['Ready for map', summary.readyForMap],
-    ['Projected X/Y pending CRS', summary.projectedXy],
+    ['Converted ADM X/Y', summary.convertedAdmXy],
+    ['Projected X/Y pending review', summary.projectedXy],
     ['Missing / invalid GIS', summary.missingOrInvalid],
   ];
 
   return (
     <CollapsibleSection
       title="GIS Conversion Readiness"
-      subtitle="Projected X/Y coordinates require CRS/EPSG confirmation before safe conversion to Latitude/Longitude."
+      subtitle="ADM X/Y coordinates are converted for map visualization; remaining projected records stay available for review."
       defaultOpen={false}
       showText="Show X/Y review table"
       hideText="Hide X/Y review table"
@@ -134,7 +136,7 @@ export default function GisConversionReadiness({ parks, isLoading = false }: Gis
       }
       summaryContent={
         <>
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
         {summaryCards.map(([label, value]) => (
           <article key={label} className="rounded-xl border border-white/10 bg-slate-950/70 p-4">
             <p className="truncate text-xs text-slate-500">{label}</p>
@@ -148,6 +150,8 @@ export default function GisConversionReadiness({ parks, isLoading = false }: Gis
           Detailed projected X/Y records are available for CRS review and export.
         </p>
       </div>
+
+      <AdmXYConversionValidation parks={parks} isLoading={isLoading} />
         </>
       }
     >

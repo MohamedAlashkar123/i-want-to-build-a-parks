@@ -697,14 +697,16 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
             <p className="border-t border-white/10 pt-1.5 text-[11px] leading-4 text-cyan-50">
               Markers represent parks, not individual cameras.
             </p>
+            <p className="text-[11px] leading-4 text-cyan-50">
+              Some ADM locations are converted from X/Y for visualization.
+            </p>
           </div>
         </div>
       </div>
 
       <p className="border-t border-white/10 bg-slate-950/60 px-4 py-2.5 text-xs leading-6 text-cyan-50">
         Map markers represent parks, not individual cameras. Only parks with valid Latitude/Longitude are plotted.
-        Projected X/Y coordinates are available for some parks, but require CRS/EPSG confirmation before safe conversion
-        to Latitude/Longitude.
+        ADM X/Y coordinates are temporarily converted for map visualization using UTM Zone 40N.
       </p>
     </section>
   );
