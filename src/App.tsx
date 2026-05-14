@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
-import ChartsPanel from './components/ChartsPanel';
-import DataNotesCard from './components/DataNotesCard';
+import CamerasByMunicipalityChart from './components/CamerasByMunicipalityChart';
+import CctvAvailabilityByMunicipalityChart from './components/CctvAvailabilityByMunicipalityChart';
+import CctvStatusChart from './components/CctvStatusChart';
 import ExecutiveMapboxMap from './components/ExecutiveMapboxMap';
-import ExecutiveSidePanel from './components/ExecutiveSidePanel';
+import ExecutiveInsightsRow from './components/ExecutiveInsightsRow';
+import GisDataQualityChart from './components/GisDataQualityChart';
 import GisConversionReadiness from './components/GisConversionReadiness';
 import Header from './components/Header';
 import KpiCards from './components/KpiCards';
@@ -59,16 +61,25 @@ export default function App() {
 
         <KpiCards parks={normalizedParksState.parks} isLoading={normalizedParksState.isLoading} />
 
-        <section className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,3fr)_minmax(280px,1fr)]">
-          <ExecutiveMapboxMap parks={normalizedParksState.parks} />
-          <ExecutiveSidePanel parks={normalizedParksState.parks} />
+        <section className="grid grid-cols-1 gap-4 lg:grid-cols-2 2xl:grid-cols-[320px_minmax(0,1fr)_320px]">
+          <div className="order-2 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:order-2 2xl:order-1 2xl:grid-cols-1">
+            <CctvStatusChart parks={normalizedParksState.parks} />
+            <CctvAvailabilityByMunicipalityChart parks={normalizedParksState.parks} />
+          </div>
+
+          <div className="order-1 lg:col-span-2 2xl:order-2 2xl:col-span-1">
+            <ExecutiveMapboxMap parks={normalizedParksState.parks} />
+          </div>
+
+          <div className="order-3 grid grid-cols-1 gap-4 sm:grid-cols-2 2xl:grid-cols-1">
+            <CamerasByMunicipalityChart parks={normalizedParksState.parks} />
+            <GisDataQualityChart parks={normalizedParksState.parks} />
+          </div>
         </section>
 
+        <ExecutiveInsightsRow parks={normalizedParksState.parks} />
+
         <SmartParksByMunicipalityCard parks={normalizedParksState.parks} isLoading={normalizedParksState.isLoading} />
-
-        <ChartsPanel parks={normalizedParksState.parks} />
-
-        <DataNotesCard />
 
         <MunicipalitySummaryTable parks={normalizedParksState.parks} isLoading={normalizedParksState.isLoading} />
 
