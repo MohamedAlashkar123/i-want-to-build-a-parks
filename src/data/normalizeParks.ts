@@ -18,6 +18,10 @@ function isWithinAdmVisualizationBounds(latitude: number, longitude: number): bo
   return latitude >= 23.5 && latitude <= 25 && longitude >= 53.8 && longitude <= 55.8;
 }
 
+function isLikelyProjectedXY(x: number | null, y: number | null): boolean {
+  return x !== null && y !== null && x >= 100000 && x <= 800000 && y >= 2000000 && y <= 3500000;
+}
+
 function normalizeText(value: unknown): string {
   return String(value ?? '')
     .replace(/\s+/g, ' ')
@@ -94,6 +98,19 @@ export function parseCameraCount(value: unknown): number {
 
   const parsed = Number(normalized.replace(/,/g, ''));
   return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+}
+
+function parseNumber(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+
+  const normalized = normalizeText(value)
+    .replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
+    .replace(/,/g, '');
+  const parsed = Number(normalized);
+
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
 function isInvalidCameraCountValue(value: unknown): boolean {
@@ -345,7 +362,68 @@ function compactOptional(value: string): string | undefined {
   return normalized && normalized !== 'لا يوجد' ? normalized : undefined;
 }
 
-function parseCoordinate(row: ExcelJS.Row, coordinateColumns: number[]): {
+function extractAdmXYFromRow(row: ExcelJS.Row, coordinateColumns: number[]): {
+  x: number | null;
+  y: number | null;
+  raw: string;
+} {
+  for (const column of coordinateColumns) {
+    const combinedRaw = readCell(row, column);
+    const combined = parseProjectedXY(combinedRaw);
+
+    if (combined && isLikelyProjectedXY(combined.x, combined.y)) {
+      return {
+        x: combined.x,
+        y: combined.y,
+        raw: `${combined.x}, ${combined.y}`,
+      };
+    }
+
+    const x = parseNumber(combinedRaw);
+    const y = parseNumber(readCell(row, column + 1));
+
+    if (isLikelyProjectedXY(x, y)) {
+      return {
+        x,
+        y,
+        raw: `${x}, ${y}`,
+      };
+    }
+  }
+
+  return {
+    x: null,
+    y: null,
+    raw: '',
+  };
+}
+
+function convertAdmXYForMap(x: number, y: number): {
+  latitude: number | null;
+  longitude: number | null;
+  coordinateConversionStatus: CoordinateConversionStatus;
+  canPlotOnMap: boolean;
+} {
+  const converted = convertUtm40NToLatLng(x, y);
+
+  if (!isWithinAdmVisualizationBounds(converted.latitude, converted.longitude)) {
+    return {
+      latitude: null,
+      longitude: null,
+      coordinateConversionStatus: 'Conversion Review Required',
+      canPlotOnMap: false,
+    };
+  }
+
+  return {
+    latitude: converted.latitude,
+    longitude: converted.longitude,
+    coordinateConversionStatus: 'Converted for Map Visualization',
+    canPlotOnMap: true,
+  };
+}
+
+function parseCoordinate(row: ExcelJS.Row, coordinateColumns: number[], municipality: Municipality): {
   coordinateRaw?: string;
   coordinateSource: CoordinateSource;
   coordinateConversionStatus: CoordinateConversionStatus;
@@ -355,6 +433,23 @@ function parseCoordinate(row: ExcelJS.Row, coordinateColumns: number[]): {
 } {
   const coordinateValues = coordinateColumns.map((column) => normalizeCoordinateValue(readCell(row, column))).filter(Boolean);
   const coordinateRaw = coordinateValues.join(' | ') || undefined;
+
+  if (municipality === 'ADM') {
+    const admXY = extractAdmXYFromRow(row, coordinateColumns);
+
+    if (admXY.x !== null && admXY.y !== null) {
+      const converted = convertAdmXYForMap(admXY.x, admXY.y);
+
+      return {
+        coordinateRaw: admXY.raw,
+        coordinateSource: converted.canPlotOnMap ? 'Converted ADM X/Y' : 'Projected XY',
+        coordinateConversionStatus: converted.coordinateConversionStatus,
+        canPlotOnMap: converted.canPlotOnMap,
+        latitude: converted.latitude,
+        longitude: converted.longitude,
+      };
+    }
+  }
 
   if (!coordinateRaw) {
     return {
@@ -493,6 +588,37 @@ function applyTemporaryAdmXYConversion(park: ParkRecord): ParkRecord {
   };
 }
 
+function logAdmXYConversionDebug(parks: ParkRecord[]) {
+  const admRecords = parks.filter((park) => park.municipality === 'ADM');
+  const admWithRawXY = admRecords.filter(
+    (park) =>
+      park.coordinateSource === 'Converted ADM X/Y' ||
+      park.coordinateSource === 'Projected XY' ||
+      Boolean(parseProjectedXY(park.coordinateRaw)),
+  );
+  const converted = admRecords.filter((park) => park.coordinateSource === 'Converted ADM X/Y' && park.canPlotOnMap);
+  const failedConversion = admRecords.filter((park) => park.coordinateConversionStatus === 'Conversion Review Required');
+  const samples = converted.slice(0, 5).map((park) => {
+    const xy = parseProjectedXY(park.coordinateRaw);
+
+    return {
+      parkName: park.parkName,
+      x: xy?.x ?? null,
+      y: xy?.y ?? null,
+      latitude: park.latitude,
+      longitude: park.longitude,
+    };
+  });
+
+  console.log('ADM X/Y conversion summary', {
+    totalAdmRecords: admRecords.length,
+    admRecordsWithRawXYDetected: admWithRawXY.length,
+    admRecordsConvertedSuccessfully: converted.length,
+    admRecordsFailedConversion: failedConversion.length,
+    first5ConvertedAdmSamples: samples,
+  });
+}
+
 export function normalizeWorkbookToParks(workbook: ExcelJS.Workbook): ParkRecord[] {
   const parks: ParkRecord[] = [];
 
@@ -537,7 +663,7 @@ export function normalizeWorkbookToParks(workbook: ExcelJS.Workbook): ParkRecord
           dataQualityIssues.push('Invalid camera count');
         }
 
-        const coordinates = parseCoordinate(row, columns.coordinates);
+        const coordinates = parseCoordinate(row, columns.coordinates, municipality);
 
         if (!coordinates.canPlotOnMap) {
           dataQualityIssues.push(
@@ -578,7 +704,7 @@ export function normalizeWorkbookToParks(workbook: ExcelJS.Workbook): ParkRecord
       });
     });
 
-  return parks.map((park) => {
+  const normalizedParks = parks.map((park) => {
     const admConvertedPark = applyTemporaryAdmXYConversion(park);
     const smartPark = enrichWithConfirmedSmartPark(admConvertedPark);
     const validation = validateParkLocation(smartPark);
@@ -589,6 +715,10 @@ export function normalizeWorkbookToParks(workbook: ExcelJS.Workbook): ParkRecord
       gisValidationReason: validation.reason,
     };
   });
+
+  logAdmXYConversionDebug(normalizedParks);
+
+  return normalizedParks;
 }
 
 export async function loadNormalizedParks(): Promise<ParkRecord[]> {
