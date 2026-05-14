@@ -1,6 +1,7 @@
 import mapboxgl from 'mapbox-gl';
 import { Check, Layers, LocateFixed, RotateCcw } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { municipalityZones } from '../data/municipalityZones';
 import type { ParkRecord } from '../types/park';
 import { validateParkLocation } from '../utils/gisValidation';
 
@@ -63,6 +64,9 @@ const parksSourceId = 'parks-source';
 const parksGlowLayerId = 'parks-glow-layer';
 const parksCirclesLayerId = 'parks-circles-layer';
 const smartParksRingLayerId = 'smart-parks-ring-layer';
+const municipalityZonesSourceId = 'municipality-zones-source';
+const municipalityZonesFillLayerId = 'municipality-zones-fill';
+const municipalityZonesOutlineLayerId = 'municipality-zones-outline';
 const emptyFeatureCollection: ParkFeatureCollection = {
   type: 'FeatureCollection',
   features: [],
@@ -271,7 +275,72 @@ function getMarkerColorExpression(): mapboxgl.Expression {
   ];
 }
 
-function addOrUpdateParkLayers(map: mapboxgl.Map, data: ParkFeatureCollection, showSmartParkIndicators: boolean) {
+function getMunicipalityZoneColorExpression(): mapboxgl.Expression {
+  return [
+    'match',
+    ['get', 'municipality'],
+    'ADM',
+    '#38bdf8',
+    'AAM',
+    '#22c55e',
+    'DRM',
+    '#f59e0b',
+    '#94a3b8',
+  ];
+}
+
+function addOrUpdateMunicipalityZoneLayers(map: mapboxgl.Map, showMunicipalityZones: boolean) {
+  const source = map.getSource(municipalityZonesSourceId);
+
+  if (source) {
+    (source as mapboxgl.GeoJSONSource).setData(municipalityZones);
+  } else {
+    map.addSource(municipalityZonesSourceId, {
+      type: 'geojson',
+      data: municipalityZones,
+    });
+  }
+
+  if (!map.getLayer(municipalityZonesFillLayerId)) {
+    map.addLayer({
+      id: municipalityZonesFillLayerId,
+      type: 'fill',
+      source: municipalityZonesSourceId,
+      paint: {
+        'fill-color': getMunicipalityZoneColorExpression(),
+        'fill-opacity': 0.1,
+      },
+    });
+  }
+
+  if (!map.getLayer(municipalityZonesOutlineLayerId)) {
+    map.addLayer({
+      id: municipalityZonesOutlineLayerId,
+      type: 'line',
+      source: municipalityZonesSourceId,
+      paint: {
+        'line-color': getMunicipalityZoneColorExpression(),
+        'line-opacity': 0.7,
+        'line-width': 1.8,
+      },
+    });
+  }
+
+  [municipalityZonesFillLayerId, municipalityZonesOutlineLayerId].forEach((layerId) => {
+    if (map.getLayer(layerId)) {
+      map.setLayoutProperty(layerId, 'visibility', showMunicipalityZones ? 'visible' : 'none');
+    }
+  });
+}
+
+function addOrUpdateParkLayers(
+  map: mapboxgl.Map,
+  data: ParkFeatureCollection,
+  showSmartParkIndicators: boolean,
+  showMunicipalityZones: boolean,
+) {
+  addOrUpdateMunicipalityZoneLayers(map, showMunicipalityZones);
+
   const source = map.getSource(parksSourceId);
 
   if (source) {
@@ -340,9 +409,11 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
   const popupRef = useRef<mapboxgl.Popup | null>(null);
   const parkDataRef = useRef<ParkFeatureCollection>(emptyFeatureCollection);
   const showSmartParkIndicatorsRef = useRef(true);
+  const showMunicipalityZonesRef = useRef(true);
   const [activeStyle, setActiveStyle] = useState(defaultMapStyle);
   const [showSuspiciousCoordinates, setShowSuspiciousCoordinates] = useState(false);
   const [showSmartParkIndicators, setShowSmartParkIndicators] = useState(true);
+  const [showMunicipalityZones, setShowMunicipalityZones] = useState(true);
   const [showParksWithCctv, setShowParksWithCctv] = useState(true);
   const [showParksWithoutCctv, setShowParksWithoutCctv] = useState(true);
   const [showUnknownCctv, setShowUnknownCctv] = useState(true);
@@ -431,7 +502,12 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
     map.setStyle(style);
     map.once('style.load', () => {
       map.jumpTo({ center, zoom, bearing, pitch });
-      addOrUpdateParkLayers(map, parkDataRef.current, showSmartParkIndicatorsRef.current);
+      addOrUpdateParkLayers(
+        map,
+        parkDataRef.current,
+        showSmartParkIndicatorsRef.current,
+        showMunicipalityZonesRef.current,
+      );
       map.resize();
     });
   }
@@ -456,7 +532,12 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
       console.error('Mapbox failed to load:', event.error);
     });
     map.on('load', () => {
-      addOrUpdateParkLayers(map, parkDataRef.current, showSmartParkIndicatorsRef.current);
+      addOrUpdateParkLayers(
+        map,
+        parkDataRef.current,
+        showSmartParkIndicatorsRef.current,
+        showMunicipalityZonesRef.current,
+      );
       map.resize();
 
       map.on('click', parksCirclesLayerId, (event) => {
@@ -516,6 +597,7 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
   useEffect(() => {
     parkDataRef.current = parkFeatureCollection;
     showSmartParkIndicatorsRef.current = showSmartParkIndicators;
+    showMunicipalityZonesRef.current = showMunicipalityZones;
 
     const map = mapRef.current;
 
@@ -523,13 +605,13 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
       return;
     }
 
-    addOrUpdateParkLayers(map, parkFeatureCollection, showSmartParkIndicators);
+    addOrUpdateParkLayers(map, parkFeatureCollection, showSmartParkIndicators, showMunicipalityZones);
 
     if (plottedParks.length > 0) {
       map.resize();
       fitToParks(plottedParks, 0);
     }
-  }, [parkFeatureCollection, plottedParks, showSmartParkIndicators]);
+  }, [parkFeatureCollection, plottedParks, showMunicipalityZones, showSmartParkIndicators]);
 
   return (
     <section className="overflow-hidden rounded-2xl border border-white/10 bg-slate-900/75 shadow-xl shadow-black/20">
@@ -633,6 +715,11 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
                     onChange: setShowSmartParkIndicators,
                   },
                   {
+                    label: 'Municipality Zones',
+                    checked: showMunicipalityZones,
+                    onChange: setShowMunicipalityZones,
+                  },
+                  {
                     label: 'Needs GIS Review',
                     checked: showSuspiciousCoordinates,
                     onChange: setShowSuspiciousCoordinates,
@@ -694,6 +781,21 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
               <span className="h-3 w-3 rounded-full border-2 border-violet-300 bg-transparent" />
               Purple ring: Confirmed Smart Park
             </p>
+            <div className="border-t border-white/10 pt-1.5">
+              <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Indicative zones</p>
+              <p className="flex items-center gap-2">
+                <span className="h-0.5 w-5 rounded-full bg-sky-400" />
+                Blue outline: ADM Zone
+              </p>
+              <p className="flex items-center gap-2">
+                <span className="h-0.5 w-5 rounded-full bg-emerald-400" />
+                Green outline: AAM Zone
+              </p>
+              <p className="flex items-center gap-2">
+                <span className="h-0.5 w-5 rounded-full bg-amber-400" />
+                Amber outline: DRM Zone
+              </p>
+            </div>
             <p className="border-t border-white/10 pt-1.5 text-[11px] leading-4 text-cyan-50">
               Markers represent parks, not individual cameras.
             </p>
@@ -706,7 +808,8 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
 
       <p className="border-t border-white/10 bg-slate-950/60 px-4 py-2.5 text-xs leading-6 text-cyan-50">
         Map markers represent parks, not individual cameras. Only parks with valid Latitude/Longitude are plotted.
-        ADM X/Y coordinates are temporarily converted for map visualization using UTM Zone 40N.
+        ADM X/Y coordinates are temporarily converted for map visualization using UTM Zone 40N. Municipality zones are
+        indicative for executive visualization and should be replaced with official GIS boundaries when available.
       </p>
     </section>
   );
