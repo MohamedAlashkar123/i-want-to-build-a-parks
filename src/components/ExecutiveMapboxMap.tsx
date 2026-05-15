@@ -353,6 +353,7 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
   const [focusArea, setFocusArea] = useState<FocusArea>(defaultFocusArea);
   const [isStyleMenuOpen, setIsStyleMenuOpen] = useState(false);
   const [isLegendOpen, setIsLegendOpen] = useState(false);
+  const [mapNotice, setMapNotice] = useState('');
 
   const mapReadyParks = useMemo(() => parks.filter(isValidUaeCoordinate), [parks]);
   const needsReviewCount = useMemo(() => mapReadyParks.filter(isNeedsGisReview).length, [mapReadyParks]);
@@ -382,6 +383,8 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
 
     if (!map || parksToFit.length === 0) {
       console.warn('No visible park markers are available for the selected map focus.');
+      setMapNotice(focusArea === 'AAM' ? 'No AAM map-ready records found. Check AAM GIS Debug.' : 'No map-ready records found for this focus area.');
+      window.setTimeout(() => setMapNotice(''), 4000);
       return;
     }
 
@@ -420,7 +423,16 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
 
   function handleFocusAreaChange(area: FocusArea) {
     setFocusArea(area);
-    fitToParks(getParksForFocus(area));
+    const parksForFocus = getParksForFocus(area);
+
+    if (parksForFocus.length === 0) {
+      console.warn(`No ${area} map-ready records found.`);
+      setMapNotice(area === 'AAM' ? 'No AAM map-ready records found. Check AAM GIS Debug.' : `No ${area} map-ready records found.`);
+      window.setTimeout(() => setMapNotice(''), 4000);
+      return;
+    }
+
+    fitToParks(parksForFocus);
   }
 
   function changeMapStyle(style: string) {
@@ -566,6 +578,12 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
             <span className="ml-2 text-orange-200">• {formatNumber(needsReviewCount)} need GIS review</span>
           )}
         </div>
+
+        {mapNotice && (
+          <div className="pointer-events-none absolute left-4 top-14 z-10 max-w-xs rounded-lg border border-amber-300/25 bg-slate-950/85 px-3 py-2 text-xs font-semibold text-amber-50 shadow-lg shadow-black/25 backdrop-blur">
+            {mapNotice}
+          </div>
+        )}
 
         <div className="absolute right-4 top-4 z-20 flex flex-col gap-2">
           <button
@@ -754,7 +772,7 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
 
       <p className="flex items-center gap-2 border-t border-white/10 bg-slate-950/60 px-4 py-2 text-xs leading-5 text-cyan-50">
         <Info className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-        Markers represent parks, not individual cameras. Some ADM locations are converted from X/Y for visualization.
+        Markers represent parks, not individual cameras. Some locations are converted from X/Y for visualization.
       </p>
     </section>
   );

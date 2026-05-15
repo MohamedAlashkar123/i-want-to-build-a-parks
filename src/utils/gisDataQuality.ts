@@ -15,6 +15,8 @@ export type GisReviewRecord = {
 export type GisDataQualitySummary = {
   readyForMap: number;
   convertedAdmXy: number;
+  convertedAamXy: number;
+  convertedDrmXy: number;
   projectedXy: number;
   missingOrInvalid: number;
 };
@@ -38,7 +40,8 @@ export function getProjectedXYRecords(parks: ParkRecord[]): GisReviewRecord[] {
     .filter(
       (park) =>
         park.coordinateSource === 'Projected XY' ||
-        park.coordinateConversionStatus === 'Pending CRS Confirmation',
+        park.coordinateConversionStatus === 'Pending CRS Confirmation' ||
+        park.coordinateConversionStatus === 'Conversion Review Required',
     )
     .map(toReviewRecord);
 }
@@ -64,6 +67,8 @@ export function getGisDataQualitySummary(parks: ParkRecord[]): GisDataQualitySum
   return {
     readyForMap: getReadyForMapRecords(parks).length,
     convertedAdmXy: parks.filter((park) => park.coordinateSource === 'Converted ADM X/Y' && park.canPlotOnMap).length,
+    convertedAamXy: parks.filter((park) => park.coordinateSource === 'Converted AAM X/Y' && park.canPlotOnMap).length,
+    convertedDrmXy: parks.filter((park) => park.coordinateSource === 'Converted DRM X/Y' && park.canPlotOnMap).length,
     projectedXy: getProjectedXYRecords(parks).length,
     missingOrInvalid: getMissingGisRecords(parks).length,
   };

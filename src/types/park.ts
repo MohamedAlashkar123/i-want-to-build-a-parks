@@ -16,6 +16,9 @@ export interface ParkRecord {
     | 'LatLng Text'
     | 'Projected XY'
     | 'Converted ADM X/Y'
+    | 'Converted AAM X/Y'
+    | 'Converted DRM X/Y'
+    | 'Converted X/Y'
     | 'Confirmed Smart Park Coordinates'
     | 'Confirmed Smart Park GPS'
     | 'Missing'
@@ -32,6 +35,13 @@ export interface ParkRecord {
   gisValidationReason?: string;
   latitude?: number | null;
   longitude?: number | null;
+  xyRawX?: string;
+  xyRawY?: string;
+  xyParsedX?: number | null;
+  xyParsedY?: number | null;
+  xyConvertedLatitude?: number | null;
+  xyConvertedLongitude?: number | null;
+  xyConversionReason?: string;
   hasCctvSystem: 'Yes' | 'No' | 'Unknown';
   totalCameras: number;
   hasMaintenanceContract: 'Yes' | 'No' | 'Unknown';

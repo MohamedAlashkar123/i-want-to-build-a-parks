@@ -6,6 +6,7 @@ import {
   getProjectedXYRecords,
   type GisReviewRecord,
 } from '../utils/gisDataQuality';
+import AamGisDebug from './AamGisDebug';
 import AdmXYConversionValidation from './AdmXYConversionValidation';
 import CollapsibleSection from './CollapsibleSection';
 
@@ -112,6 +113,8 @@ export default function GisConversionReadiness({ parks, isLoading = false }: Gis
   const summaryCards = [
     ['Ready for map', summary.readyForMap],
     ['Converted ADM X/Y', summary.convertedAdmXy],
+    ['Converted AAM X/Y', summary.convertedAamXy],
+    ['Converted DRM X/Y', summary.convertedDrmXy],
     ['Projected X/Y pending review', summary.projectedXy],
     ['Missing / invalid GIS', summary.missingOrInvalid],
   ];
@@ -119,7 +122,7 @@ export default function GisConversionReadiness({ parks, isLoading = false }: Gis
   return (
     <CollapsibleSection
       title="GIS Conversion Readiness"
-      subtitle="ADM X/Y coordinates are converted for map visualization; remaining projected records stay available for review."
+      subtitle="Available X/Y coordinates are converted for map visualization; remaining projected records stay available for review."
       defaultOpen={false}
       showText="Show X/Y review table"
       hideText="Hide X/Y review table"
@@ -136,7 +139,7 @@ export default function GisConversionReadiness({ parks, isLoading = false }: Gis
       }
       summaryContent={
         <>
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-3 xl:grid-cols-6">
         {summaryCards.map(([label, value]) => (
           <article key={label} className="rounded-xl border border-white/10 bg-slate-950/70 p-4">
             <p className="truncate text-xs text-slate-500">{label}</p>
@@ -152,6 +155,7 @@ export default function GisConversionReadiness({ parks, isLoading = false }: Gis
       </div>
 
       <AdmXYConversionValidation parks={parks} isLoading={isLoading} />
+      <AamGisDebug parks={parks} />
         </>
       }
     >

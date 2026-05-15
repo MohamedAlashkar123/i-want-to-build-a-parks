@@ -29,6 +29,8 @@ export default function ExecutiveInsightsRow({ parks }: ExecutiveInsightsRowProp
       park.gisValidationStatus !== 'Suspicious',
   ).length;
   const convertedAdmXy = parks.filter((park) => park.coordinateSource === 'Converted ADM X/Y' && park.canPlotOnMap).length;
+  const convertedAamXy = parks.filter((park) => park.coordinateSource === 'Converted AAM X/Y' && park.canPlotOnMap).length;
+  const convertedDrmXy = parks.filter((park) => park.coordinateSource === 'Converted DRM X/Y' && park.canPlotOnMap).length;
   const projectedXy = parks.filter(
     (park) => park.coordinateSource === 'Projected XY' || park.coordinateConversionStatus === 'Conversion Review Required',
   ).length;
@@ -85,6 +87,8 @@ export default function ExecutiveInsightsRow({ parks }: ExecutiveInsightsRowProp
               ['Ready', validGis],
               ['Google Maps', googleMaps],
               ['ADM X/Y', convertedAdmXy],
+              ['AAM X/Y', convertedAamXy],
+              ['DRM X/Y', convertedDrmXy],
               ['Pending', projectedXy],
             ].map(([label, value]) => (
               <div key={label} className="rounded-lg border border-white/10 bg-slate-900/70 px-3 py-2">

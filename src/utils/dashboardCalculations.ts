@@ -209,6 +209,8 @@ export function getGisDataQualityChartData(parks: ParkRecord[]): ChartDataPoint[
   const readyForMap = parks.filter((park) => park.canPlotOnMap).length;
   const googleMaps = parks.filter((park) => park.coordinateSource === 'Google Maps' && park.canPlotOnMap).length;
   const convertedAdmXy = parks.filter((park) => park.coordinateSource === 'Converted ADM X/Y' && park.canPlotOnMap).length;
+  const convertedAamXy = parks.filter((park) => park.coordinateSource === 'Converted AAM X/Y' && park.canPlotOnMap).length;
+  const convertedDrmXy = parks.filter((park) => park.coordinateSource === 'Converted DRM X/Y' && park.canPlotOnMap).length;
   const projectedXy = parks.filter(
     (park) => park.coordinateSource === 'Projected XY' || park.coordinateConversionStatus === 'Conversion Review Required',
   ).length;
@@ -225,6 +227,8 @@ export function getGisDataQualityChartData(parks: ParkRecord[]): ChartDataPoint[
     { name: 'Ready for Map', value: readyForMap },
     { name: 'Extracted from Google Maps', value: googleMaps },
     { name: 'Converted ADM X/Y', value: convertedAdmXy },
+    { name: 'Converted AAM X/Y', value: convertedAamXy },
+    { name: 'Converted DRM X/Y', value: convertedDrmXy },
     { name: 'Projected X/Y Pending Review', value: projectedXy },
     { name: 'Missing or Invalid GIS', value: missingOrInvalid },
   ];

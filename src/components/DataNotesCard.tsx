@@ -13,8 +13,8 @@ export default function DataNotesCard() {
         <li>Corniche Park is confirmed smart but has no CCTV visitor counting cameras.</li>
         <li>No crowd detection, vandalism detection, facial recognition, or other AI capabilities are included.</li>
         <li>No operational camera status or actual coverage percentage is available.</li>
-        <li>ADM X/Y coordinates are converted for map visualization using UTM Zone 40N and remain subject to final GIS validation.</li>
-        <li>Some non-ADM projected X/Y records still require coordinate reference review before map display.</li>
+        <li>Available X/Y coordinates are converted for map visualization using UTM Zone 40N and remain subject to final GIS validation.</li>
+        <li>Projected X/Y records outside validation ranges remain pending review before map display.</li>
         <li>English park names are missing from the current Excel dataset.</li>
       </ul>
     </section>

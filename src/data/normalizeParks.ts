@@ -9,13 +9,48 @@ type Municipality = ParkRecord['municipality'];
 type YesNoUnknown = 'Yes' | 'No' | 'Unknown';
 type CoordinateSource = NonNullable<ParkRecord['coordinateSource']>;
 type CoordinateConversionStatus = NonNullable<ParkRecord['coordinateConversionStatus']>;
+type ExtractedXY = {
+  x: number | null;
+  y: number | null;
+  raw: string;
+  rawX?: string;
+  rawY?: string;
+  source?: 'Header' | 'Adjacent Scan';
+};
 
 const mainSheetNames = ['NEW - ADM Parks', 'NEW - DRM Parks', 'New AAM Parks V2'];
 const excelFileUrl = `/${excelFileName}`;
 const projectedCoordinateIssue = 'Projected X/Y coordinates require conversion';
 
-function isWithinAdmVisualizationBounds(latitude: number, longitude: number): boolean {
-  return latitude >= 23.5 && latitude <= 25 && longitude >= 53.8 && longitude <= 55.8;
+const xyConversionBounds = {
+  ADM: { minLat: 23.5, maxLat: 25, minLng: 53.8, maxLng: 55.8 },
+  AAM: { minLat: 23.8, maxLat: 24.6, minLng: 55.2, maxLng: 56.4 },
+  DRM: { minLat: 22.5, maxLat: 24.8, minLng: 51.5, maxLng: 54.9 },
+} as const;
+
+function isWithinMunicipalityVisualizationBounds(municipality: Municipality, latitude: number, longitude: number): boolean {
+  if (!(municipality in xyConversionBounds)) {
+    return false;
+  }
+
+  const bounds = xyConversionBounds[municipality as keyof typeof xyConversionBounds];
+  return latitude >= bounds.minLat && latitude <= bounds.maxLat && longitude >= bounds.minLng && longitude <= bounds.maxLng;
+}
+
+function convertedCoordinateSourceForMunicipality(municipality: Municipality): CoordinateSource {
+  if (municipality === 'ADM') {
+    return 'Converted ADM X/Y';
+  }
+
+  if (municipality === 'AAM') {
+    return 'Converted AAM X/Y';
+  }
+
+  if (municipality === 'DRM') {
+    return 'Converted DRM X/Y';
+  }
+
+  return 'Converted X/Y';
 }
 
 function isLikelyProjectedXY(x: number | null, y: number | null): boolean {
@@ -26,6 +61,28 @@ function normalizeText(value: unknown): string {
   return String(value ?? '')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+function normalizeHeaderLabel(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[\u064B-\u065F\u0670\u0640]/g, '')
+    .replace(/[إأآا]/g, 'ا')
+    .replace(/[^\p{L}\p{N},]+/gu, '')
+    .replace(/\s+/g, '')
+    .trim();
+}
+
+function isCoordinateHeaderLabel(label: string): boolean {
+  const normalized = normalizeHeaderLabel(label);
+
+  return (
+    normalized.includes('احداثيات') ||
+    normalized.includes('coordinates') ||
+    normalized.includes('coordinate') ||
+    normalized.includes('xy') ||
+    normalized.includes('x,y')
+  );
 }
 
 export function getCellText(value: ExcelJS.CellValue): string {
@@ -100,14 +157,20 @@ export function parseCameraCount(value: unknown): number {
   return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
 }
 
-function parseNumber(value: unknown): number | null {
+function parseCoordinateNumber(value: unknown): number | null {
   if (typeof value === 'number' && Number.isFinite(value)) {
     return value;
   }
 
   const normalized = normalizeText(value)
     .replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
-    .replace(/,/g, '');
+    .replace(/,/g, '')
+    .trim();
+
+  if (!normalized || normalized === '-' || /غير\s*مخصص|غير\s*مخصصة/.test(normalized)) {
+    return null;
+  }
+
   const parsed = Number(normalized);
 
   return Number.isFinite(parsed) ? parsed : null;
@@ -328,13 +391,27 @@ type HeaderCell = {
 };
 
 function getHeaderCells(worksheet: ExcelJS.Worksheet): HeaderCell[] {
-  const headerRow = worksheet.getRow(2);
   const headers: HeaderCell[] = [];
+  const columnLabels = new Map<number, string[]>();
 
-  headerRow.eachCell({ includeEmpty: false }, (cell, columnNumber) => {
+  [1, 2].forEach((rowNumber) => {
+    const headerRow = worksheet.getRow(rowNumber);
+
+    headerRow.eachCell({ includeEmpty: false }, (cell, columnNumber) => {
+      const label = getCellText(cell.value);
+
+      if (!label) {
+        return;
+      }
+
+      columnLabels.set(columnNumber, [...(columnLabels.get(columnNumber) ?? []), label]);
+    });
+  });
+
+  [...columnLabels.entries()].forEach(([columnNumber, labels]) => {
     headers.push({
       columnNumber,
-      label: getCellText(cell.value),
+      label: labels.join(' '),
     });
   });
 
@@ -362,31 +439,67 @@ function compactOptional(value: string): string | undefined {
   return normalized && normalized !== 'لا يوجد' ? normalized : undefined;
 }
 
-function extractAdmXYFromRow(row: ExcelJS.Row, coordinateColumns: number[]): {
-  x: number | null;
-  y: number | null;
-  raw: string;
-} {
-  for (const column of coordinateColumns) {
-    const combinedRaw = readCell(row, column);
-    const combined = parseProjectedXY(combinedRaw);
+function extractXYFromRow(row: ExcelJS.Row, xColumnIndex: number, source: ExtractedXY['source'] = 'Header'): ExtractedXY {
+  const xRaw = readCell(row, xColumnIndex);
+  const yRaw = readCell(row, xColumnIndex + 1);
+  const combined = parseProjectedXY(xRaw);
 
-    if (combined && isLikelyProjectedXY(combined.x, combined.y)) {
-      return {
-        x: combined.x,
-        y: combined.y,
-        raw: `${combined.x}, ${combined.y}`,
-      };
-    }
+  if (combined && isLikelyProjectedXY(combined.x, combined.y)) {
+    return {
+      x: combined.x,
+      y: combined.y,
+      raw: `${combined.x}, ${combined.y}`,
+      rawX: xRaw,
+      rawY: yRaw,
+      source,
+    };
+  }
 
-    const x = parseNumber(combinedRaw);
-    const y = parseNumber(readCell(row, column + 1));
+  const x = parseCoordinateNumber(xRaw);
+  const y = parseCoordinateNumber(yRaw);
 
-    if (isLikelyProjectedXY(x, y)) {
+  if (isLikelyProjectedXY(x, y)) {
+    return {
+      x,
+      y,
+      raw: `${x}, ${y}`,
+      rawX: xRaw,
+      rawY: yRaw,
+      source,
+    };
+  }
+
+  return {
+    x: null,
+    y: null,
+    raw: '',
+    rawX: xRaw,
+    rawY: yRaw,
+    source,
+  };
+}
+
+function extractXYFromAdjacentCellsByRange(
+  row: ExcelJS.Row,
+  xRange: { min: number; max: number },
+  yRange: { min: number; max: number },
+): ExtractedXY {
+  const lastCell = Math.max(row.cellCount, row.actualCellCount);
+
+  for (let column = 1; column < lastCell; column += 1) {
+    const xRaw = readCell(row, column);
+    const yRaw = readCell(row, column + 1);
+    const x = parseCoordinateNumber(xRaw);
+    const y = parseCoordinateNumber(yRaw);
+
+    if (x !== null && y !== null && x >= xRange.min && x <= xRange.max && y >= yRange.min && y <= yRange.max) {
       return {
         x,
         y,
         raw: `${x}, ${y}`,
+        rawX: xRaw,
+        rawY: yRaw,
+        source: 'Adjacent Scan',
       };
     }
   }
@@ -398,26 +511,58 @@ function extractAdmXYFromRow(row: ExcelJS.Row, coordinateColumns: number[]): {
   };
 }
 
-function convertAdmXYForMap(x: number, y: number): {
+function extractXYFromCoordinateColumns(row: ExcelJS.Row, coordinateColumns: number[], municipality: Municipality): ExtractedXY {
+  for (const column of coordinateColumns) {
+    const xy = extractXYFromRow(row, column);
+
+    if (xy.x !== null && xy.y !== null) {
+      return xy;
+    }
+  }
+
+  if (municipality === 'AAM') {
+    const aamFallback = extractXYFromAdjacentCellsByRange(row, { min: 300000, max: 450000 }, { min: 2600000, max: 2800000 });
+
+    if (aamFallback.x !== null && aamFallback.y !== null) {
+      return aamFallback;
+    }
+  }
+
+  return {
+    x: null,
+    y: null,
+    raw: '',
+  };
+}
+
+function convertXYForMap(municipality: Municipality, x: number, y: number): {
   latitude: number | null;
   longitude: number | null;
+  convertedLatitude: number;
+  convertedLongitude: number;
   coordinateConversionStatus: CoordinateConversionStatus;
   canPlotOnMap: boolean;
+  reason?: string;
 } {
   const converted = convertUtm40NToLatLng(x, y);
 
-  if (!isWithinAdmVisualizationBounds(converted.latitude, converted.longitude)) {
+  if (!isWithinMunicipalityVisualizationBounds(municipality, converted.latitude, converted.longitude)) {
     return {
       latitude: null,
       longitude: null,
+      convertedLatitude: converted.latitude,
+      convertedLongitude: converted.longitude,
       coordinateConversionStatus: 'Conversion Review Required',
       canPlotOnMap: false,
+      reason: `Converted coordinate is outside the expected ${municipality} validation range.`,
     };
   }
 
   return {
     latitude: converted.latitude,
     longitude: converted.longitude,
+    convertedLatitude: converted.latitude,
+    convertedLongitude: converted.longitude,
     coordinateConversionStatus: 'Converted for Map Visualization',
     canPlotOnMap: true,
   };
@@ -430,23 +575,37 @@ function parseCoordinate(row: ExcelJS.Row, coordinateColumns: number[], municipa
   canPlotOnMap: boolean;
   latitude: number | null;
   longitude: number | null;
+  xyRawX?: string;
+  xyRawY?: string;
+  xyParsedX?: number | null;
+  xyParsedY?: number | null;
+  xyConvertedLatitude?: number | null;
+  xyConvertedLongitude?: number | null;
+  xyConversionReason?: string;
 } {
   const coordinateValues = coordinateColumns.map((column) => normalizeCoordinateValue(readCell(row, column))).filter(Boolean);
   const coordinateRaw = coordinateValues.join(' | ') || undefined;
 
-  if (municipality === 'ADM') {
-    const admXY = extractAdmXYFromRow(row, coordinateColumns);
+  if (['ADM', 'AAM', 'DRM'].includes(municipality)) {
+    const xy = extractXYFromCoordinateColumns(row, coordinateColumns, municipality);
 
-    if (admXY.x !== null && admXY.y !== null) {
-      const converted = convertAdmXYForMap(admXY.x, admXY.y);
+    if (xy.x !== null && xy.y !== null) {
+      const converted = convertXYForMap(municipality, xy.x, xy.y);
 
       return {
-        coordinateRaw: admXY.raw,
-        coordinateSource: converted.canPlotOnMap ? 'Converted ADM X/Y' : 'Projected XY',
+        coordinateRaw: xy.raw,
+        coordinateSource: converted.canPlotOnMap ? convertedCoordinateSourceForMunicipality(municipality) : 'Projected XY',
         coordinateConversionStatus: converted.coordinateConversionStatus,
         canPlotOnMap: converted.canPlotOnMap,
         latitude: converted.latitude,
         longitude: converted.longitude,
+        xyRawX: xy.rawX,
+        xyRawY: xy.rawY,
+        xyParsedX: xy.x,
+        xyParsedY: xy.y,
+        xyConvertedLatitude: converted.convertedLatitude,
+        xyConvertedLongitude: converted.convertedLongitude,
+        xyConversionReason: converted.reason,
       };
     }
   }
@@ -545,9 +704,9 @@ function parseCoordinate(row: ExcelJS.Row, coordinateColumns: number[], municipa
   };
 }
 
-function applyTemporaryAdmXYConversion(park: ParkRecord): ParkRecord {
+function applyTemporaryXYConversion(park: ParkRecord): ParkRecord {
   if (
-    park.municipality !== 'ADM' ||
+    !['ADM', 'AAM', 'DRM'].includes(park.municipality) ||
     park.canPlotOnMap ||
     !park.coordinateRaw ||
     park.coordinateSource !== 'Projected XY'
@@ -563,14 +722,19 @@ function applyTemporaryAdmXYConversion(park: ParkRecord): ParkRecord {
 
   const converted = convertUtm40NToLatLng(parsed.x, parsed.y);
 
-  if (!isWithinAdmVisualizationBounds(converted.latitude, converted.longitude)) {
+  if (!isWithinMunicipalityVisualizationBounds(park.municipality, converted.latitude, converted.longitude)) {
     return {
       ...park,
       canPlotOnMap: false,
       coordinateConversionStatus: 'Conversion Review Required',
+      xyParsedX: parsed.x,
+      xyParsedY: parsed.y,
+      xyConvertedLatitude: converted.latitude,
+      xyConvertedLongitude: converted.longitude,
+      xyConversionReason: `${park.municipality} conversion is outside validation range.`,
       dataQualityIssues: [
         ...park.dataQualityIssues.filter((issue) => issue !== projectedCoordinateIssue),
-        'ADM X/Y conversion review required',
+        `${park.municipality} X/Y conversion review required`,
       ],
     };
   }
@@ -580,25 +744,54 @@ function applyTemporaryAdmXYConversion(park: ParkRecord): ParkRecord {
     latitude: converted.latitude,
     longitude: converted.longitude,
     canPlotOnMap: true,
-    coordinateSource: 'Converted ADM X/Y',
+    coordinateSource: convertedCoordinateSourceForMunicipality(park.municipality),
     coordinateConversionStatus: 'Converted for Map Visualization',
+    xyParsedX: parsed.x,
+    xyParsedY: parsed.y,
+    xyConvertedLatitude: converted.latitude,
+    xyConvertedLongitude: converted.longitude,
     dataQualityIssues: park.dataQualityIssues.filter(
       (issue) => issue !== projectedCoordinateIssue && issue !== 'Missing or invalid GIS coordinates',
     ),
   };
 }
 
-function logAdmXYConversionDebug(parks: ParkRecord[]) {
-  const admRecords = parks.filter((park) => park.municipality === 'ADM');
-  const admWithRawXY = admRecords.filter(
-    (park) =>
-      park.coordinateSource === 'Converted ADM X/Y' ||
-      park.coordinateSource === 'Projected XY' ||
-      Boolean(parseProjectedXY(park.coordinateRaw)),
+function isConvertedXYSource(park: ParkRecord, municipality: 'ADM' | 'AAM' | 'DRM'): boolean {
+  return park.coordinateSource === convertedCoordinateSourceForMunicipality(municipality);
+}
+
+function logXYConversionDebug(parks: ParkRecord[]) {
+  const summary = (['ADM', 'AAM', 'DRM'] as const).reduce(
+    (accumulator, municipality) => {
+      const records = parks.filter((park) => park.municipality === municipality);
+      const xyDetected = records.filter(
+        (park) =>
+          isConvertedXYSource(park, municipality) ||
+          park.coordinateSource === 'Projected XY' ||
+          Boolean(parseProjectedXY(park.coordinateRaw)),
+      );
+      const converted = records.filter((park) => isConvertedXYSource(park, municipality) && park.canPlotOnMap);
+
+      return {
+        ...accumulator,
+        [`total${municipality}Records`]: records.length,
+        [`${municipality}XYDetected`]: xyDetected.length,
+        [`${municipality}ConvertedSuccessfully`]: converted.length,
+      };
+    },
+    {} as Record<string, number>,
   );
-  const converted = admRecords.filter((park) => park.coordinateSource === 'Converted ADM X/Y' && park.canPlotOnMap);
-  const failedConversion = admRecords.filter((park) => park.coordinateConversionStatus === 'Conversion Review Required');
-  const samples = converted.slice(0, 5).map((park) => {
+  const geoJsonFeaturesByMunicipality = (['ADM', 'AAM', 'DRM'] as const).reduce(
+    (accumulator, municipality) => ({
+      ...accumulator,
+      [municipality]: parks.filter((park) => park.municipality === municipality && park.canPlotOnMap).length,
+    }),
+    {} as Record<'ADM' | 'AAM' | 'DRM', number>,
+  );
+  const first5AamConvertedSamples = parks
+    .filter((park) => isConvertedXYSource(park, 'AAM') && park.canPlotOnMap)
+    .slice(0, 5)
+    .map((park) => {
     const xy = parseProjectedXY(park.coordinateRaw);
 
     return {
@@ -607,15 +800,15 @@ function logAdmXYConversionDebug(parks: ParkRecord[]) {
       y: xy?.y ?? null,
       latitude: park.latitude,
       longitude: park.longitude,
+      coordinateSource: park.coordinateSource,
+      canPlotOnMap: park.canPlotOnMap,
     };
   });
 
-  console.log('ADM X/Y conversion summary', {
-    totalAdmRecords: admRecords.length,
-    admRecordsWithRawXYDetected: admWithRawXY.length,
-    admRecordsConvertedSuccessfully: converted.length,
-    admRecordsFailedConversion: failedConversion.length,
-    first5ConvertedAdmSamples: samples,
+  console.log('X/Y conversion summary', {
+    ...summary,
+    geoJsonFeaturesByMunicipality,
+    first5AamConvertedSamples,
   });
 }
 
@@ -630,12 +823,12 @@ export function normalizeWorkbookToParks(workbook: ExcelJS.Workbook): ParkRecord
       const columns = {
         parkName: findColumn(headers, (label) => label.includes('اسم الحديقة')),
         parkReferenceNumber: findColumn(headers, (label) => label.includes('الرقم الموحد للحديقة')),
-        region: findColumn(headers, (label) => label === 'المنطقة'),
+        region: findColumn(headers, (label) => label.includes('المنطقة') || label.toLowerCase().includes('region')),
         parkType: findColumn(headers, (label) => label.includes('نوع الحديقة')),
         parkClassification: findColumn(headers, (label) => label.includes('التصنيف')),
         supervisorEntity: findColumn(headers, (label) => label.includes('تحت إشراف')),
         locationText: findColumn(headers, (label) => label.includes('موقع') || label.includes('عنوان')),
-        coordinates: findColumns(headers, (label) => label.includes('إحداثيات')),
+        coordinates: findColumns(headers, isCoordinateHeaderLabel),
         hasCctvSystem: findColumn(headers, (label) => label.includes('يوجد نظام مراقبة')),
         totalCameras: findColumn(headers, (label) => label.includes('عدد الكاميرات')),
         hasMaintenanceContract: findColumn(headers, (label) => label.includes('يوجد عقد صيانة')),
@@ -691,6 +884,13 @@ export function normalizeWorkbookToParks(workbook: ExcelJS.Workbook): ParkRecord
           canPlotOnMap: coordinates.canPlotOnMap,
           latitude: coordinates.latitude,
           longitude: coordinates.longitude,
+          xyRawX: coordinates.xyRawX,
+          xyRawY: coordinates.xyRawY,
+          xyParsedX: coordinates.xyParsedX,
+          xyParsedY: coordinates.xyParsedY,
+          xyConvertedLatitude: coordinates.xyConvertedLatitude,
+          xyConvertedLongitude: coordinates.xyConvertedLongitude,
+          xyConversionReason: coordinates.xyConversionReason,
           hasCctvSystem: normalizeYesNo(readCell(row, columns.hasCctvSystem)),
           totalCameras,
           hasMaintenanceContract: normalizeYesNo(readCell(row, columns.hasMaintenanceContract)),
@@ -705,8 +905,8 @@ export function normalizeWorkbookToParks(workbook: ExcelJS.Workbook): ParkRecord
     });
 
   const normalizedParks = parks.map((park) => {
-    const admConvertedPark = applyTemporaryAdmXYConversion(park);
-    const smartPark = enrichWithConfirmedSmartPark(admConvertedPark);
+    const convertedPark = applyTemporaryXYConversion(park);
+    const smartPark = enrichWithConfirmedSmartPark(convertedPark);
     const validation = validateParkLocation(smartPark);
 
     return {
@@ -716,7 +916,7 @@ export function normalizeWorkbookToParks(workbook: ExcelJS.Workbook): ParkRecord
     };
   });
 
-  logAdmXYConversionDebug(normalizedParks);
+  logXYConversionDebug(normalizedParks);
 
   return normalizedParks;
 }

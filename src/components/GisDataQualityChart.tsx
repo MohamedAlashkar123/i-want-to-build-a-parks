@@ -13,6 +13,8 @@ const colors: Record<string, string> = {
   'Ready for Map': '#22c55e',
   'Extracted from Google Maps': '#38bdf8',
   'Converted ADM X/Y': '#a78bfa',
+  'Converted AAM X/Y': '#60a5fa',
+  'Converted DRM X/Y': '#fbbf24',
   'Projected X/Y Pending Review': '#f59e0b',
   'Missing or Invalid GIS': '#ef4444',
 };
@@ -25,7 +27,7 @@ export default function GisDataQualityChart({ parks }: GisDataQualityChartProps)
     <ChartCard
       title="GIS Data Quality"
       subtitle="Coordinate readiness for executive map plotting."
-      note="ADM X/Y coordinates are converted for visualization using UTM Zone 40N."
+      note="Available X/Y coordinates are converted for visualization using UTM Zone 40N."
     >
       {hasData ? (
         <ResponsiveContainer width="100%" height="100%">
