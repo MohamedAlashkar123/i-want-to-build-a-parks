@@ -11,7 +11,7 @@ function asNumber(value: number | undefined): number | undefined {
 }
 
 function mapDmtStatus(status: UnifiedParkRecord['dmtIntegrationStatus']): ParkRecord['dmtIntegrationStatus'] {
-  return status === 'Integrated' ? 'Integrated' : 'Not Integrated';
+  return status === 'Integrated' ? 'Integrated' : 'Not Confirmed';
 }
 
 function mapCoordinateStatus(status: UnifiedParkRecord['coordinateStatus']): ParkRecord['coordinateConversionStatus'] {
@@ -99,6 +99,9 @@ export function unifiedParkToParkRecord(record: UnifiedParkRecord): ParkRecord {
     smartSystemAvailable: record.isSmartPark,
     hasSensors: record.isSmartPark,
     dmtIntegrationConfirmed: record.dmtIntegrationStatus === 'Integrated',
+    gisMatchStatus: record.gisMatchStatus,
+    gisMatchScore: record.gisMatchScore,
+    gisMatchedName: record.gisMatchedName,
     aiVisitorCountingAvailable: record.aiVisitorCountingAvailable,
     aiVisitorCountingCameraCount: record.aiVisitorCountingCameraCount,
     smartParkNote: record.smartParkNote,

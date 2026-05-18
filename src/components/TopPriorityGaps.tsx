@@ -23,6 +23,7 @@ function translateIssue(issue: string): string {
     'حالة عقد الصيانة غير مؤكدة': 'Maintenance contract status is not confirmed',
     'مخططات الكاميرات غير متوفرة': 'Camera drawings are not available',
     'الكاميرات تعمل بشكل مستقل وغير مربوطة بأنظمة DMT': 'Cameras are standalone and not integrated with DMT systems',
+    'حالة الربط مع أنظمة DMT غير مؤكدة': 'DMT integration status is not confirmed',
   };
 
   return issueMap[issue] || issue;
@@ -62,6 +63,8 @@ function requiredActionForGap(gap: GapAnalysisRecord): string {
       'Provide technical drawings and camera locations for assessment and expansion planning.',
     'تقييم إمكانية الربط المستقبلي مع الأنظمة المركزية حسب الأولوية والمتطلبات الأمنية':
       'Assess future integration with central systems based on priority and security requirements.',
+    'تأكيد حالة الربط مع أنظمة DMT في دورة التحقق القادمة':
+      'Confirm DMT integration status in the next data validation cycle.',
   };
 
   return recommendationMap[gap.recommendedAction] || gap.recommendedAction;

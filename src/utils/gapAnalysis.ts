@@ -129,12 +129,18 @@ export function generateGapAnalysis(parks: ParkRecord[]): GapAnalysisRecord[] {
       );
     }
 
-    if (park.hasCctvSystem === 'Yes' && park.dmtIntegrationStatus === 'Not Integrated') {
+    if (
+      park.hasCctvSystem === 'Yes' &&
+      !park.isSmartPark &&
+      (park.dmtIntegrationStatus === 'Not Integrated' ||
+        park.dmtIntegrationStatus === 'Not Confirmed' ||
+        park.dmtIntegrationStatus === 'To be confirmed')
+    ) {
       gaps.push(
-        createGap(park, 'dmt-not-integrated', {
+        createGap(park, 'dmt-not-confirmed', {
           gapCategory: 'Integration',
-          issue: 'الكاميرات تعمل بشكل مستقل وغير مربوطة بأنظمة DMT',
-          recommendedAction: 'تقييم إمكانية الربط المستقبلي مع الأنظمة المركزية حسب الأولوية والمتطلبات الأمنية',
+          issue: 'حالة الربط مع أنظمة DMT غير مؤكدة',
+          recommendedAction: 'تأكيد حالة الربط مع أنظمة DMT في دورة التحقق القادمة',
           priority: 'Medium',
           status: 'Open',
         }),

@@ -12,14 +12,76 @@ import KpiCards from './components/KpiCards';
 import MunicipalitySummaryTable from './components/MunicipalitySummaryTable';
 import SmartParksByMunicipalityCard from './components/SmartParksByMunicipalityCard';
 import TopPriorityGaps from './components/TopPriorityGaps';
-import { loadUnifiedParksAsParkRecords } from './data/loadUnifiedParks';
+import { loadUnifiedParksAsParkRecords, loadUnifiedParksGeoJson } from './data/loadUnifiedParks';
 import { loadNormalizedParks } from './data/normalizeParks';
 import type { ParkRecord } from './types/park';
+import {
+  getDmtIntegratedSmartParksCount,
+  getParksWithCctv,
+  getParksWithoutCctv,
+  getSmartParksCount,
+  getSmartParksWithVisitorCountingCount,
+  getTotalCameras,
+  getTotalVisitorCountingCameras,
+  getUnknownCctvStatus,
+} from './utils/dashboardCalculations';
 
 type NormalizedParksState = {
   isLoading: boolean;
   parks: ParkRecord[];
 };
+
+function countByMunicipality(parks: ParkRecord[], predicate: (park: ParkRecord) => boolean = () => true) {
+  return (['ADM', 'AAM', 'DRM', 'Unknown'] as const).reduce(
+    (summary, municipality) => ({
+      ...summary,
+      [municipality]: parks.filter((park) => park.municipality === municipality && predicate(park)).length,
+    }),
+    {} as Record<ParkRecord['municipality'], number>,
+  );
+}
+
+function logDevelopmentDataSummary(
+  source: 'unified dataset' | 'Excel fallback',
+  parks: ParkRecord[],
+  geoJson?: GeoJSON.FeatureCollection<GeoJSON.Point>,
+) {
+  if (!import.meta.env.DEV) {
+    return;
+  }
+
+  const mapReadyRecords = parks.filter((park) => park.canPlotOnMap === true);
+  const geoJsonFeatures = geoJson?.features ?? [];
+  const geoJsonFeaturesByMunicipality = geoJsonFeatures.reduce<Record<string, number>>((summary, feature) => {
+    const municipality = String(feature.properties?.municipality ?? 'Unknown');
+    summary[municipality] = (summary[municipality] ?? 0) + 1;
+    return summary;
+  }, {});
+
+  console.log('Dashboard data validation summary', {
+    dataSourceUsed: source,
+    totalRecords: parks.length,
+    mapReadyRecords: mapReadyRecords.length,
+    recordsByMunicipality: countByMunicipality(parks),
+    mapReadyRecordsByMunicipality: countByMunicipality(parks, (park) => park.canPlotOnMap === true),
+    cctv: {
+      yes: getParksWithCctv(parks),
+      no: getParksWithoutCctv(parks),
+      unknown: getUnknownCctvStatus(parks),
+    },
+    totalCameras: getTotalCameras(parks),
+    confirmedSmartParks: getSmartParksCount(parks),
+    aiVisitorCountingParks: getSmartParksWithVisitorCountingCount(parks),
+    aiVisitorCountingCameras: getTotalVisitorCountingCameras(parks),
+    dmtIntegratedSmartParks: getDmtIntegratedSmartParksCount(parks),
+    gisMatchedCount: parks.filter((park) => park.gisMatchStatus === 'Matched').length,
+    gisUnmatchedCount: parks.filter((park) => park.gisMatchStatus === 'Unmatched').length,
+    manualSmartParkRecords: parks.filter((park) => park.gisMatchStatus === 'Manual').length,
+    geoJsonFeatures: geoJsonFeatures.length,
+    geoJsonFeaturesByMunicipality,
+    markerMeaning: 'Map markers represent parks, not individual cameras.',
+  });
+}
 
 export default function App() {
   const shouldReduceMotion = useReducedMotion();
@@ -44,7 +106,11 @@ export default function App() {
           throw new Error('Unified dataset is empty.');
         }
 
-        console.log('Data source: unified dataset');
+        const unifiedGeoJson = await loadUnifiedParksGeoJson().catch((error) => {
+          console.warn('Unified map-ready GeoJSON validation load failed.', error);
+          return undefined;
+        });
+        logDevelopmentDataSummary('unified dataset', unifiedParks, unifiedGeoJson);
 
         if (isMounted) {
           setNormalizedParksState({ isLoading: false, parks: unifiedParks });
@@ -54,7 +120,7 @@ export default function App() {
 
         try {
           const parks = await loadNormalizedParks();
-          console.log('Data source: Excel fallback');
+          logDevelopmentDataSummary('Excel fallback', parks);
 
           if (isMounted) {
             setNormalizedParksState({ isLoading: false, parks });

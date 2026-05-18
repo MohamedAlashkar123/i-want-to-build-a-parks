@@ -50,7 +50,7 @@ export interface ParkRecord {
   maintenanceContractEndDate?: string;
   hasDrawings: 'Yes' | 'No' | 'Unknown';
   cameraSetupType: 'Standalone' | 'Integrated' | 'Unknown';
-  dmtIntegrationStatus: 'Not Integrated' | 'Integrated' | 'To be confirmed';
+  dmtIntegrationStatus: 'Not Integrated' | 'Integrated' | 'To be confirmed' | 'Not Confirmed';
   isSmartPark?: boolean;
   smartParkMatchedName?: string;
   smartParkCapabilities?: string[];
@@ -62,5 +62,8 @@ export interface ParkRecord {
   aiVisitorCountingCameraCount?: number;
   aiVisitorCountingMethod?: string;
   smartParkNote?: string;
+  gisMatchStatus?: 'Matched' | 'Unmatched' | 'Manual';
+  gisMatchScore?: number;
+  gisMatchedName?: string;
   dataQualityIssues: string[];
 }
