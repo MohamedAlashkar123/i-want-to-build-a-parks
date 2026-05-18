@@ -19,6 +19,7 @@ export interface ParkRecord {
     | 'Converted AAM X/Y'
     | 'Converted DRM X/Y'
     | 'Converted X/Y'
+    | 'GIS Geodatabase'
     | 'Confirmed Smart Park Coordinates'
     | 'Confirmed Smart Park GPS'
     | 'Missing'

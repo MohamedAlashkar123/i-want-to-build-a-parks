@@ -12,6 +12,7 @@ import KpiCards from './components/KpiCards';
 import MunicipalitySummaryTable from './components/MunicipalitySummaryTable';
 import SmartParksByMunicipalityCard from './components/SmartParksByMunicipalityCard';
 import TopPriorityGaps from './components/TopPriorityGaps';
+import { loadUnifiedParksAsParkRecords } from './data/loadUnifiedParks';
 import { loadNormalizedParks } from './data/normalizeParks';
 import type { ParkRecord } from './types/park';
 
@@ -37,15 +38,32 @@ export default function App() {
 
     async function loadParks() {
       try {
-        const parks = await loadNormalizedParks();
+        const unifiedParks = await loadUnifiedParksAsParkRecords();
+
+        if (!unifiedParks.length) {
+          throw new Error('Unified dataset is empty.');
+        }
+
+        console.log('Data source: unified dataset');
 
         if (isMounted) {
-          setNormalizedParksState({ isLoading: false, parks });
+          setNormalizedParksState({ isLoading: false, parks: unifiedParks });
         }
-      } catch {
+      } catch (unifiedError) {
+        console.warn('Unified dataset load failed. Falling back to Excel flow.', unifiedError);
+
+        try {
+          const parks = await loadNormalizedParks();
+          console.log('Data source: Excel fallback');
+
+          if (isMounted) {
+            setNormalizedParksState({ isLoading: false, parks });
+          }
+        } catch {
         if (isMounted) {
           setNormalizedParksState({ isLoading: false, parks: [] });
         }
+      }
       }
     }
 
