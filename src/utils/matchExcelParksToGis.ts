@@ -160,7 +160,7 @@ function toUnifiedPark(excelPark: ParkRecord, match: MatchResult): UnifiedParkRe
 }
 
 function logMatchSummary(records: UnifiedParkRecord[], excelTotal: number, gisTotal: number) {
-  if (!import.meta.env.DEV) {
+  if (!import.meta.env?.DEV) {
     return;
   }
 

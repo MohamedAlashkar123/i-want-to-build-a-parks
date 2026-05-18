@@ -1,0 +1,41 @@
+{
+  "totalExcelRecords": 597,
+  "totalGisRecords": 601,
+  "matchedToGis": 301,
+  "unmatchedToGis": 296,
+  "readyForMap": 479,
+  "missingCoordinates": 118,
+  "smartParks": 5,
+  "aiVisitorCountingParks": 5,
+  "aiVisitorCountingCameras": 202,
+  "byMunicipality": {
+    "ADM": {
+      "total": 251,
+      "matchedToGis": 166,
+      "readyForMap": 190,
+      "missingCoordinates": 61,
+      "smartParks": 2
+    },
+    "AAM": {
+      "total": 225,
+      "matchedToGis": 135,
+      "readyForMap": 190,
+      "missingCoordinates": 35,
+      "smartParks": 2
+    },
+    "DRM": {
+      "total": 121,
+      "matchedToGis": 0,
+      "readyForMap": 99,
+      "missingCoordinates": 22,
+      "smartParks": 1
+    },
+    "Unknown": {
+      "total": 0,
+      "matchedToGis": 0,
+      "readyForMap": 0,
+      "missingCoordinates": 0,
+      "smartParks": 0
+    }
+  }
+}
