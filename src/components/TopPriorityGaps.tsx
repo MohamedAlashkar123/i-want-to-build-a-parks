@@ -22,7 +22,7 @@ function translateIssue(issue: string): string {
     'لا يوجد عقد صيانة مسجل': 'No maintenance contract recorded',
     'حالة عقد الصيانة غير مؤكدة': 'Maintenance contract status is not confirmed',
     'مخططات الكاميرات غير متوفرة': 'Camera drawings are not available',
-    'الكاميرات تعمل بشكل مستقل وغير مربوطة بأنظمة DMT': 'Cameras are standalone and not integrated with DMT systems',
+    'الكاميرات تعمل بشكل مستقل وغير مربوطة بأنظمة DMT': 'DMT integration status is not confirmed',
     'حالة الربط مع أنظمة DMT غير مؤكدة': 'DMT integration status is not confirmed',
   };
 

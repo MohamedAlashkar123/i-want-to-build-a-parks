@@ -71,7 +71,7 @@ export function unifiedParkToParkRecord(record: UnifiedParkRecord): ParkRecord {
 
   return {
     id: record.id,
-    sourceSheet: record.sourceSheet ?? 'Unified dataset',
+    sourceSheet: record.sourceSheet ?? (record.gisMatchStatus === 'Manual' ? 'Confirmed Smart Parks' : 'Unified dataset'),
     sourceRowNumber: record.sourceRowNumber ?? 0,
     municipality: record.municipality,
     parkName: record.parkName,

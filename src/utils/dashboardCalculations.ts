@@ -14,44 +14,52 @@ function hasValidGisCoordinates(park: ParkRecord): boolean {
   );
 }
 
+export function isInventoryPark(park: ParkRecord): boolean {
+  return park.gisMatchStatus !== 'Manual' && park.sourceSheet !== 'Confirmed Smart Parks';
+}
+
+function inventoryParks(parks: ParkRecord[]): ParkRecord[] {
+  return parks.filter(isInventoryPark);
+}
+
 export function getTotalParks(parks: ParkRecord[]): number {
-  return parks.length;
+  return inventoryParks(parks).length;
 }
 
 export function getParksWithCctv(parks: ParkRecord[]): number {
-  return parks.filter((park) => park.hasCctvSystem === 'Yes').length;
+  return inventoryParks(parks).filter((park) => park.hasCctvSystem === 'Yes').length;
 }
 
 export function getParksWithoutCctv(parks: ParkRecord[]): number {
-  return parks.filter((park) => park.hasCctvSystem === 'No').length;
+  return inventoryParks(parks).filter((park) => park.hasCctvSystem === 'No').length;
 }
 
 export function getUnknownCctvStatus(parks: ParkRecord[]): number {
-  return parks.filter((park) => park.hasCctvSystem === 'Unknown').length;
+  return inventoryParks(parks).filter((park) => park.hasCctvSystem === 'Unknown').length;
 }
 
 export function getTotalCameras(parks: ParkRecord[]): number {
-  return parks.reduce((total, park) => total + park.totalCameras, 0);
+  return inventoryParks(parks).reduce((total, park) => total + park.totalCameras, 0);
 }
 
 export function getParksWithMaintenanceContract(parks: ParkRecord[]): number {
-  return parks.filter((park) => park.hasMaintenanceContract === 'Yes').length;
+  return inventoryParks(parks).filter((park) => park.hasMaintenanceContract === 'Yes').length;
 }
 
 export function getParksWithoutMaintenanceContract(parks: ParkRecord[]): number {
-  return parks.filter((park) => park.hasMaintenanceContract === 'No').length;
+  return inventoryParks(parks).filter((park) => park.hasMaintenanceContract === 'No').length;
 }
 
 export function getUnknownMaintenanceContract(parks: ParkRecord[]): number {
-  return parks.filter((park) => park.hasMaintenanceContract === 'Unknown').length;
+  return inventoryParks(parks).filter((park) => park.hasMaintenanceContract === 'Unknown').length;
 }
 
 export function getParksWithDrawings(parks: ParkRecord[]): number {
-  return parks.filter((park) => park.hasDrawings === 'Yes').length;
+  return inventoryParks(parks).filter((park) => park.hasDrawings === 'Yes').length;
 }
 
 export function getParksWithoutDrawings(parks: ParkRecord[]): number {
-  return parks.filter((park) => park.hasDrawings === 'No').length;
+  return inventoryParks(parks).filter((park) => park.hasDrawings === 'No').length;
 }
 
 export function getValidGisCoordinatesCount(parks: ParkRecord[]): number {
@@ -63,19 +71,21 @@ export function getMissingGisCoordinatesCount(parks: ParkRecord[]): number {
 }
 
 export function getDmtIntegratedParks(parks: ParkRecord[]): number {
-  return parks.filter((park) => park.dmtIntegrationStatus === 'Integrated').length;
+  return parks.filter((park) => park.isSmartPark && park.dmtIntegrationStatus === 'Integrated').length;
 }
 
 export function getStandaloneCameraSetupCount(parks: ParkRecord[]): number {
-  return parks.filter((park) => park.cameraSetupType === 'Standalone').length;
+  return inventoryParks(parks).filter((park) => park.cameraSetupType === 'Standalone').length;
 }
 
 export function getCctvParkPercentage(parks: ParkRecord[]): number {
-  if (parks.length === 0) {
+  const inventoryCount = getTotalParks(parks);
+
+  if (inventoryCount === 0) {
     return 0;
   }
 
-  return (getParksWithCctv(parks) / parks.length) * 100;
+  return (getParksWithCctv(parks) / inventoryCount) * 100;
 }
 
 export function getSmartParksCount(parks: ParkRecord[]): number {
@@ -122,9 +132,10 @@ function hasMapReadyCoordinates(park: ParkRecord): boolean {
 
 export function getMunicipalitySummary(parks: ParkRecord[]): MunicipalitySummaryRow[] {
   return (['ADM', 'AAM', 'DRM'] as const).map((municipality) => {
-    const municipalityParks = parks.filter((park) => park.municipality === municipality);
-    const validGis = municipalityParks.filter(hasMapReadyCoordinates).length;
-    const projectedXy = municipalityParks.filter(
+    const municipalityParks = inventoryParks(parks).filter((park) => park.municipality === municipality);
+    const municipalityMapRecords = parks.filter((park) => park.municipality === municipality);
+    const validGis = municipalityMapRecords.filter(hasMapReadyCoordinates).length;
+    const projectedXy = municipalityMapRecords.filter(
       (park) => park.coordinateSource === 'Projected XY' || park.coordinateConversionStatus === 'Conversion Review Required',
     ).length;
 
@@ -136,7 +147,7 @@ export function getMunicipalitySummary(parks: ParkRecord[]): MunicipalitySummary
       unknownCctv: municipalityParks.filter((park) => park.hasCctvSystem === 'Unknown').length,
       totalCameras: municipalityParks.reduce((total, park) => total + park.totalCameras, 0),
       validGis,
-      missingOrInvalidGis: municipalityParks.length - validGis,
+      missingOrInvalidGis: Math.max(0, municipalityParks.length - validGis),
       projectedXy,
       maintenanceContracts: municipalityParks.filter((park) => park.hasMaintenanceContract === 'Yes').length,
     };

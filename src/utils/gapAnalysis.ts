@@ -1,4 +1,5 @@
 import type { ParkRecord } from '../types/park';
+import { isInventoryPark } from './dashboardCalculations';
 
 export interface GapAnalysisRecord {
   id: string;
@@ -42,7 +43,7 @@ function createGap(
 }
 
 export function generateGapAnalysis(parks: ParkRecord[]): GapAnalysisRecord[] {
-  return parks.flatMap((park) => {
+  return parks.filter(isInventoryPark).flatMap((park) => {
     const gaps: GapAnalysisRecord[] = [];
 
     if (park.hasCctvSystem === 'No') {

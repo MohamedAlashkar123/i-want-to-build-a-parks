@@ -6,8 +6,6 @@ import {
   getProjectedXYRecords,
   type GisReviewRecord,
 } from '../utils/gisDataQuality';
-import AamGisDebug from './AamGisDebug';
-import AdmXYConversionValidation from './AdmXYConversionValidation';
 import CollapsibleSection from './CollapsibleSection';
 
 type GisConversionReadinessProps = {
@@ -17,7 +15,7 @@ type GisConversionReadinessProps = {
 
 type MunicipalityFilter = 'All' | 'ADM' | 'AAM' | 'DRM';
 
-const requiredAction = 'Confirm CRS/EPSG before conversion to Latitude/Longitude';
+const requiredAction = 'Confirm coordinate reference before conversion to Latitude/Longitude';
 
 function formatNumber(value: number): string {
   return new Intl.NumberFormat('en-US').format(value);
@@ -115,14 +113,14 @@ export default function GisConversionReadiness({ parks, isLoading = false }: Gis
     ['Converted ADM X/Y', summary.convertedAdmXy],
     ['Converted AAM X/Y', summary.convertedAamXy],
     ['Converted DRM X/Y', summary.convertedDrmXy],
-    ['Projected X/Y pending review', summary.projectedXy],
+    ['Location review', summary.projectedXy],
     ['Missing / invalid GIS', summary.missingOrInvalid],
   ];
 
   return (
     <CollapsibleSection
       title="GIS Conversion Readiness"
-      subtitle="Available X/Y coordinates are converted for map visualization; remaining projected records stay available for review."
+      subtitle="Location records that need additional GIS review remain available for export."
       defaultOpen={false}
       showText="Show X/Y review table"
       hideText="Hide X/Y review table"
@@ -134,7 +132,7 @@ export default function GisConversionReadiness({ parks, isLoading = false }: Gis
           disabled={isLoading || filteredRecords.length === 0}
         >
           <Download className="h-4 w-4" aria-hidden="true" />
-          Export X/Y Review CSV
+          Export Location Review CSV
         </button>
       }
       summaryContent={
@@ -150,12 +148,9 @@ export default function GisConversionReadiness({ parks, isLoading = false }: Gis
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-slate-950/50 px-4 py-3">
         <p className="text-xs leading-5 text-slate-400">
-          Detailed projected X/Y records are available for CRS review and export.
+          Detailed location records are available for GIS team review and export.
         </p>
       </div>
-
-      <AdmXYConversionValidation parks={parks} isLoading={isLoading} />
-      <AamGisDebug parks={parks} />
         </>
       }
     >

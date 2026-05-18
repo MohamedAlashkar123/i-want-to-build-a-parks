@@ -102,13 +102,15 @@ export default function ExecutiveInsightsRow({ parks }: ExecutiveInsightsRowProp
         <article className="flex h-full min-h-[238px] flex-col rounded-2xl border border-white/10 bg-slate-950/55 p-4">
           <div className="mb-3 flex items-center gap-2">
             <Database className="h-4 w-4 text-cyan-100" aria-hidden="true" />
-            <h3 className="text-base font-semibold text-white">Smart Parks & Data Notes</h3>
+            <h3 className="text-base font-semibold text-white">Data Notes</h3>
           </div>
           <ul className="grid flex-1 list-disc content-start gap-y-2 pl-4 text-xs leading-5 text-slate-300 marker:text-cyan-300">
-            <li>{formatNumber(getSmartParksCount(parks))} smart parks confirmed by the project team.</li>
-            <li>{formatNumber(getSmartParksWithVisitorCountingCount(parks))} smart parks support AI visitor counting.</li>
-            <li>Smart parks are integrated with DMT systems.</li>
-            <li>Operational camera status and actual coverage % are not available.</li>
+            <li>Park locations are enriched using the GIS Geodatabase provided by the GIS team.</li>
+            <li>CCTV availability and camera counts are based on the CCTV inventory Excel.</li>
+            <li>Confirmed smart parks are based on project-team confirmation.</li>
+            <li>AI visitor counting data is available for {formatNumber(getSmartParksWithVisitorCountingCount(parks))} of the {formatNumber(getSmartParksCount(parks))} confirmed smart parks.</li>
+            <li>Corniche Beach is a confirmed smart park and integrated with DMT systems, but it has no CCTV visitor counting cameras.</li>
+            <li>Operational camera status and actual physical camera coverage percentage are not available in the current dataset.</li>
           </ul>
         </article>
       </div>

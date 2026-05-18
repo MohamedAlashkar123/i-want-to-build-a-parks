@@ -48,7 +48,7 @@ function KeyInsightsCard({ parks, isLoading = false }: ExecutiveOverviewCardsPro
         ))}
       </div>
       <p className="mt-3 rounded-lg border border-amber-300/20 bg-amber-300/10 px-3 py-2 text-xs font-semibold leading-5 text-amber-50">
-        Confirmed smart parks are integrated with DMT systems. Integration status for remaining CCTV inventory parks is not confirmed.
+        Confirmed smart parks are integrated with DMT systems. Integration status for the remaining CCTV inventory parks is not confirmed in the current dataset.
       </p>
     </section>
   );

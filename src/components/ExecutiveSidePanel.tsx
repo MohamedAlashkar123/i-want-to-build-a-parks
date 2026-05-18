@@ -47,7 +47,7 @@ export default function ExecutiveSidePanel({ parks }: ExecutiveSidePanelProps) {
             ))}
           </div>
           <p className="mt-2 rounded-lg border border-cyan-300/20 bg-cyan-300/10 px-3 py-2 text-xs font-semibold leading-5 text-cyan-50">
-            Confirmed smart parks are integrated with DMT systems. Integration status for remaining CCTV inventory parks is not confirmed in the current dataset.
+            Confirmed smart parks are integrated with DMT systems. Integration status for the remaining CCTV inventory parks is not confirmed in the current dataset.
           </p>
         </div>
 

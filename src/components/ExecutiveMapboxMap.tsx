@@ -772,7 +772,7 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
 
       <p className="flex items-center gap-2 border-t border-white/10 bg-slate-950/60 px-4 py-2 text-xs leading-5 text-cyan-50">
         <Info className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-        Markers represent parks, not individual cameras. Some locations are converted from X/Y for visualization.
+        Markers represent parks, not individual cameras. Park locations are based on the unified GIS-enriched dataset.
       </p>
     </section>
   );

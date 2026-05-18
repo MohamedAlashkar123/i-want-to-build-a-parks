@@ -38,9 +38,9 @@ export default function KpiCards({ parks, isLoading = false }: KpiCardsProps) {
   const shouldReduceMotion = useReducedMotion();
   const primaryKpis = [
     {
-      label: 'Total Parks',
+      label: 'Total Parks Inventory',
       value: formatNumber(getTotalParks(parks)),
-      helper: 'Unified inventory records',
+      helper: 'Excel inventory records',
       icon: Trees,
     },
     {
