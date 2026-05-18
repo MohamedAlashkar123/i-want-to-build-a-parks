@@ -73,6 +73,12 @@ const emptyFeatureCollection: ParkFeatureCollection = {
 const focusAreas: FocusArea[] = ['All Plotted Parks', 'ADM', 'AAM', 'DRM', 'Smart Parks'];
 const focusPadding = { top: 90, bottom: 70, left: 70, right: 70 };
 
+function devLog(message: string, ...data: unknown[]) {
+  if (import.meta.env.DEV) {
+    console.log(message, ...data);
+  }
+}
+
 function formatNumber(value: number): string {
   return new Intl.NumberFormat('en-US').format(value);
 }
@@ -117,6 +123,72 @@ function markerColorForCctv(status: ParkRecord['hasCctvSystem']): MarkerColor {
   }
 
   return 'gray';
+}
+
+function asBoolean(value: unknown): boolean {
+  return value === true || value === 'true';
+}
+
+function asNumber(value: unknown): number {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  return 0;
+}
+
+function asCctvStatus(value: unknown): ParkRecord['hasCctvSystem'] {
+  return value === 'Yes' || value === 'No' || value === 'Unknown' ? value : 'Unknown';
+}
+
+function asMaintenanceStatus(value: unknown): ParkRecord['hasMaintenanceContract'] {
+  return value === 'Yes' || value === 'No' || value === 'Unknown' ? value : 'Unknown';
+}
+
+function formatProperty(value: unknown): string {
+  if (typeof value === 'string' || typeof value === 'number' || value === null || value === undefined) {
+    return formatOptional(value);
+  }
+
+  return String(value);
+}
+
+function normalizeFeatureProperties(properties: Record<string, unknown>): ParkFeatureProperties {
+  return {
+    id: formatProperty(properties.id),
+    parkName: formatProperty(properties.parkName),
+    municipality: formatProperty(properties.municipality),
+    region: formatProperty(properties.region),
+    parkType: formatProperty(properties.parkType),
+    hasCctvSystem: asCctvStatus(properties.hasCctvSystem),
+    totalCameras: asNumber(properties.totalCameras),
+    hasMaintenanceContract: asMaintenanceStatus(properties.hasMaintenanceContract),
+    maintenanceCompany: formatProperty(properties.maintenanceCompany),
+    hasDrawings: asMaintenanceStatus(properties.hasDrawings),
+    isSmartPark: asBoolean(properties.isSmartPark),
+    smartParkCapabilities: formatProperty(properties.smartParkCapabilities),
+    aiVisitorCountingAvailable: asBoolean(properties.aiVisitorCountingAvailable),
+    aiVisitorCountingCameraCount: asNumber(properties.aiVisitorCountingCameraCount),
+    smartParkNote: formatProperty(properties.smartParkNote),
+    dmtIntegrationStatus: formatProperty(properties.dmtIntegrationStatus),
+    dmtIntegrationScope: formatProperty(properties.dmtIntegrationScope),
+    gisValidationStatus: formatProperty(properties.gisValidationStatus),
+    gisValidationReason: formatProperty(properties.gisValidationReason),
+    parkImageUrl: formatProperty(properties.parkImageUrl),
+    markerColor:
+      properties.markerColor === 'green' ||
+      properties.markerColor === 'red' ||
+      properties.markerColor === 'gray' ||
+      properties.markerColor === 'orange'
+        ? properties.markerColor
+        : 'gray',
+    isNeedsGisReview: asBoolean(properties.isNeedsGisReview),
+  };
 }
 
 function badgeClassForStatus(status: 'Yes' | 'No' | 'Unknown', warningForNo = false): string {
@@ -200,6 +272,7 @@ function addOrUpdateParkLayers(map: mapboxgl.Map, data: ParkFeatureCollection, s
       type: 'geojson',
       data,
     });
+    devLog('Parks source added');
   }
 
   if (!map.getLayer(parksGlowLayerId)) {
@@ -214,6 +287,7 @@ function addOrUpdateParkLayers(map: mapboxgl.Map, data: ParkFeatureCollection, s
         'circle-stroke-width': 0,
       },
     });
+    devLog('Parks glow layer added');
   }
 
   if (!map.getLayer(smartParksRingLayerId)) {
@@ -231,6 +305,7 @@ function addOrUpdateParkLayers(map: mapboxgl.Map, data: ParkFeatureCollection, s
         'circle-stroke-width': 2.5,
       },
     });
+    devLog('Smart parks ring layer added');
   }
 
   if (!map.getLayer(parksCirclesLayerId)) {
@@ -246,6 +321,7 @@ function addOrUpdateParkLayers(map: mapboxgl.Map, data: ParkFeatureCollection, s
         'circle-stroke-width': 1.5,
       },
     });
+    devLog('Parks layer added');
   }
 
   if (map.getLayer(smartParksRingLayerId)) {
@@ -259,6 +335,9 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const parkDataRef = useRef<ParkFeatureCollection>(emptyFeatureCollection);
   const showSmartParkIndicatorsRef = useRef(true);
+  const markerClickHandlerRef = useRef<((event: mapboxgl.MapLayerMouseEvent) => void) | null>(null);
+  const markerMouseEnterHandlerRef = useRef<(() => void) | null>(null);
+  const markerMouseLeaveHandlerRef = useRef<(() => void) | null>(null);
   const [activeStyle, setActiveStyle] = useState(defaultMapStyle);
   const [showSuspiciousCoordinates, setShowSuspiciousCoordinates] = useState(false);
   const [showSmartParkIndicators, setShowSmartParkIndicators] = useState(true);
@@ -373,8 +452,64 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
     map.once('style.load', () => {
       map.jumpTo({ center, zoom, bearing, pitch });
       addOrUpdateParkLayers(map, parkDataRef.current, showSmartParkIndicatorsRef.current);
+      registerMarkerHandlers(map);
       map.resize();
     });
+  }
+
+  function unregisterMarkerHandlers(map: mapboxgl.Map) {
+    if (markerClickHandlerRef.current) {
+      map.off('click', parksCirclesLayerId, markerClickHandlerRef.current);
+      markerClickHandlerRef.current = null;
+    }
+
+    if (markerMouseEnterHandlerRef.current) {
+      map.off('mouseenter', parksCirclesLayerId, markerMouseEnterHandlerRef.current);
+      markerMouseEnterHandlerRef.current = null;
+    }
+
+    if (markerMouseLeaveHandlerRef.current) {
+      map.off('mouseleave', parksCirclesLayerId, markerMouseLeaveHandlerRef.current);
+      markerMouseLeaveHandlerRef.current = null;
+    }
+  }
+
+  function registerMarkerHandlers(map: mapboxgl.Map) {
+    if (!map.getLayer(parksCirclesLayerId)) {
+      devLog('Marker click handler not registered: parks layer missing');
+      return;
+    }
+
+    unregisterMarkerHandlers(map);
+
+    const handleMarkerClick = (event: mapboxgl.MapLayerMouseEvent) => {
+      const feature = event.features?.[0];
+
+      if (!feature || feature.geometry.type !== 'Point' || !feature.properties) {
+        return;
+      }
+
+      const selected = normalizeFeatureProperties(feature.properties);
+      devLog(`Marker clicked: ${selected.parkName}`);
+      setSelectedPark(selected);
+    };
+
+    const handleMarkerMouseEnter = () => {
+      map.getCanvas().style.cursor = 'pointer';
+    };
+
+    const handleMarkerMouseLeave = () => {
+      map.getCanvas().style.cursor = '';
+    };
+
+    markerClickHandlerRef.current = handleMarkerClick;
+    markerMouseEnterHandlerRef.current = handleMarkerMouseEnter;
+    markerMouseLeaveHandlerRef.current = handleMarkerMouseLeave;
+
+    map.on('click', parksCirclesLayerId, handleMarkerClick);
+    map.on('mouseenter', parksCirclesLayerId, handleMarkerMouseEnter);
+    map.on('mouseleave', parksCirclesLayerId, handleMarkerMouseLeave);
+    devLog('Marker click handler registered');
   }
 
   useEffect(() => {
@@ -397,32 +532,10 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
       console.error('Mapbox failed to load:', event.error);
     });
     map.on('load', () => {
+      devLog('Map loaded');
       addOrUpdateParkLayers(map, parkDataRef.current, showSmartParkIndicatorsRef.current);
+      registerMarkerHandlers(map);
       map.resize();
-
-      map.on('click', parksCirclesLayerId, (event) => {
-        const feature = event.features?.[0];
-
-        if (!feature || feature.geometry.type !== 'Point') {
-          return;
-        }
-
-        const properties = feature.properties as ParkFeatureProperties | undefined;
-
-        if (!properties) {
-          return;
-        }
-
-        setSelectedPark(properties);
-      });
-
-      map.on('mouseenter', parksCirclesLayerId, () => {
-        map.getCanvas().style.cursor = 'pointer';
-      });
-
-      map.on('mouseleave', parksCirclesLayerId, () => {
-        map.getCanvas().style.cursor = '';
-      });
     });
 
     map.resize();
@@ -437,6 +550,7 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
       window.clearTimeout(resizeTimeout);
       window.removeEventListener('resize', handleWindowResize);
       resizeObserver.disconnect();
+      unregisterMarkerHandlers(map);
       map.remove();
       mapRef.current = null;
     };
@@ -472,113 +586,8 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
               <p className="mt-2 text-sm leading-7">
                 Mapbox token is missing. Please add VITE_MAPBOX_TOKEN to the .env file.
               </p>
-        </div>
-
-        <AnimatePresence>
-          {selectedPark && (
-            <motion.aside
-              className="pointer-events-auto absolute bottom-4 right-4 top-40 z-20 flex w-[min(360px,calc(100%-2rem))] flex-col overflow-hidden rounded-2xl border border-white/10 bg-slate-950/90 shadow-2xl shadow-black/40 backdrop-blur md:top-20"
-              initial={shouldReduceMotion ? false : { opacity: 0, x: 18 }}
-              animate={shouldReduceMotion ? undefined : { opacity: 1, x: 0 }}
-              exit={shouldReduceMotion ? undefined : { opacity: 0, x: 18 }}
-              transition={{ duration: 0.18 }}
-              aria-label="Park details"
-            >
-              <div className="flex items-start justify-between gap-3 border-b border-white/10 px-4 py-3">
-                <div className="min-w-0">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-cyan-200">Park Details</p>
-                  <h3 className="mt-1 truncate text-base font-semibold text-white" title={selectedPark.parkName}>
-                    {selectedPark.parkName}
-                  </h3>
-                  <p className="mt-1 truncate text-xs text-slate-400">
-                    {selectedPark.municipality} / {formatOptional(selectedPark.region)}
-                  </p>
-                </div>
-                <button
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-slate-300 transition hover:border-cyan-300/40 hover:text-white"
-                  type="button"
-                  onClick={() => setSelectedPark(null)}
-                  aria-label="Close park details"
-                  title="Close"
-                >
-                  <X className="h-4 w-4" aria-hidden="true" />
-                </button>
-              </div>
-
-              <div className="overflow-y-auto p-4">
-                {selectedPark.parkImageUrl && selectedPark.parkImageUrl !== '-' ? (
-                  <img
-                    className="aspect-video w-full rounded-xl border border-white/10 object-cover"
-                    src={selectedPark.parkImageUrl}
-                    alt={`${selectedPark.parkName} park`}
-                    onError={(event) => {
-                      event.currentTarget.style.display = 'none';
-                    }}
-                  />
-                ) : (
-                  <div className="flex aspect-video w-full items-center justify-center rounded-xl border border-white/10 bg-gradient-to-br from-slate-800 via-slate-900 to-cyan-950/60 text-slate-300">
-                    <div className="text-center">
-                      <ImageIcon className="mx-auto h-8 w-8 text-cyan-100/70" aria-hidden="true" />
-                      <p className="mt-2 text-sm font-semibold">Park Image</p>
-                    </div>
-                  </div>
-                )}
-
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {selectedPark.isSmartPark && (
-                    <span className="rounded-full border border-violet-300/25 bg-violet-300/10 px-2.5 py-1 text-xs font-semibold text-violet-50">
-                      Confirmed Smart Park
-                    </span>
-                  )}
-                  {selectedPark.isNeedsGisReview && (
-                    <span className="rounded-full border border-orange-300/25 bg-orange-300/10 px-2.5 py-1 text-xs font-semibold text-orange-50">
-                      Needs GIS Review
-                    </span>
-                  )}
-                </div>
-
-                <div className="mt-4 grid gap-2 text-xs">
-                  {[
-                    ['Municipality', selectedPark.municipality],
-                    ['Region', selectedPark.region],
-                    ['Park Type', selectedPark.parkType],
-                    ['CCTV Status', selectedPark.hasCctvSystem],
-                    ['Total Cameras', formatNumber(selectedPark.totalCameras)],
-                    ['Smart Park', selectedPark.isSmartPark ? 'Yes' : 'No'],
-                    ['AI Visitor Counting', selectedPark.isSmartPark ? (selectedPark.aiVisitorCountingAvailable ? 'Yes' : 'No') : '-'],
-                    [
-                      'AI Visitor Counting Cameras',
-                      selectedPark.isSmartPark ? formatNumber(selectedPark.aiVisitorCountingCameraCount) : '-',
-                    ],
-                    ['DMT Integration', selectedPark.isSmartPark ? 'Integrated' : 'Not confirmed'],
-                    ['GIS Status', selectedPark.gisValidationStatus],
-                  ].map(([label, value]) => (
-                    <div key={label} className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-slate-900/70 px-3 py-2">
-                      <span className="text-slate-400">{label}</span>
-                      <span
-                        className={`max-w-[55%] truncate text-right font-semibold ${
-                          label === 'CCTV Status' || label === 'AI Visitor Counting'
-                            ? `rounded-full border px-2 py-0.5 ${badgeClassForStatus(value as 'Yes' | 'No' | 'Unknown')}`
-                            : 'text-white'
-                        }`}
-                        title={String(value)}
-                      >
-                        {formatOptional(value)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-
-                {selectedPark.smartParkNote && selectedPark.smartParkNote !== '-' && (
-                  <p className="mt-3 rounded-xl border border-amber-300/20 bg-amber-300/10 px-3 py-2 text-xs leading-5 text-amber-50">
-                    {selectedPark.smartParkNote}
-                  </p>
-                )}
-              </div>
-            </motion.aside>
-          )}
-        </AnimatePresence>
-      </div>
+            </div>
+          </div>
         )}
 
         <div className="pointer-events-none absolute left-4 top-4 z-10 rounded-lg border border-white/10 bg-slate-950/80 px-3 py-2 text-xs text-slate-200 shadow-lg shadow-black/25 backdrop-blur">
@@ -777,6 +786,114 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
           )}
           </AnimatePresence>
           </div>
+
+        <AnimatePresence>
+          {selectedPark && (
+            <motion.aside
+              className="pointer-events-auto absolute bottom-4 right-4 top-40 z-20 flex w-[min(360px,calc(100%-2rem))] flex-col overflow-hidden rounded-2xl border border-white/10 bg-slate-950/90 shadow-2xl shadow-black/40 backdrop-blur md:top-20"
+              initial={shouldReduceMotion ? false : { opacity: 0, x: 18 }}
+              animate={shouldReduceMotion ? undefined : { opacity: 1, x: 0 }}
+              exit={shouldReduceMotion ? undefined : { opacity: 0, x: 18 }}
+              transition={{ duration: 0.18 }}
+              aria-label="Park details"
+            >
+              <div className="flex items-start justify-between gap-3 border-b border-white/10 px-4 py-3">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-cyan-200">Park Details</p>
+                  <h3 className="mt-1 truncate text-base font-semibold text-white" title={selectedPark.parkName}>
+                    {selectedPark.parkName}
+                  </h3>
+                  <p className="mt-1 truncate text-xs text-slate-400">
+                    {selectedPark.municipality} / {formatOptional(selectedPark.region)}
+                  </p>
+                </div>
+                <button
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-slate-300 transition hover:border-cyan-300/40 hover:text-white"
+                  type="button"
+                  onClick={() => setSelectedPark(null)}
+                  aria-label="Close park details"
+                  title="Close"
+                >
+                  <X className="h-4 w-4" aria-hidden="true" />
+                </button>
+              </div>
+
+              <div className="overflow-y-auto p-4">
+                {selectedPark.parkImageUrl && selectedPark.parkImageUrl !== '-' ? (
+                  <img
+                    className="aspect-video w-full rounded-xl border border-white/10 object-cover"
+                    src={selectedPark.parkImageUrl}
+                    alt={`${selectedPark.parkName} park`}
+                    onError={(event) => {
+                      event.currentTarget.style.display = 'none';
+                    }}
+                  />
+                ) : (
+                  <div className="flex aspect-video w-full items-center justify-center rounded-xl border border-white/10 bg-gradient-to-br from-slate-800 via-slate-900 to-cyan-950/60 text-slate-300">
+                    <div className="text-center">
+                      <ImageIcon className="mx-auto h-8 w-8 text-cyan-100/70" aria-hidden="true" />
+                      <p className="mt-2 text-sm font-semibold">Park Image</p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {selectedPark.isSmartPark && (
+                    <span className="rounded-full border border-violet-300/25 bg-violet-300/10 px-2.5 py-1 text-xs font-semibold text-violet-50">
+                      Confirmed Smart Park
+                    </span>
+                  )}
+                  {selectedPark.isNeedsGisReview && (
+                    <span className="rounded-full border border-orange-300/25 bg-orange-300/10 px-2.5 py-1 text-xs font-semibold text-orange-50">
+                      Needs GIS Review
+                    </span>
+                  )}
+                </div>
+
+                <div className="mt-4 grid gap-2 text-xs">
+                  {[
+                    ['Municipality', selectedPark.municipality],
+                    ['Region', selectedPark.region],
+                    ['Park Type', selectedPark.parkType],
+                    ['CCTV Status', selectedPark.hasCctvSystem],
+                    ['Total Cameras', formatNumber(selectedPark.totalCameras)],
+                    ['Smart Park', selectedPark.isSmartPark ? 'Yes' : 'No'],
+                    ['AI Visitor Counting', selectedPark.isSmartPark ? (selectedPark.aiVisitorCountingAvailable ? 'Yes' : 'No') : '-'],
+                    [
+                      'AI Visitor Counting Cameras',
+                      selectedPark.isSmartPark ? formatNumber(selectedPark.aiVisitorCountingCameraCount) : '-',
+                    ],
+                    ['DMT Integration', selectedPark.isSmartPark ? 'Integrated' : 'Not confirmed'],
+                    ['GIS Status', selectedPark.gisValidationStatus],
+                  ].map(([label, value]) => (
+                    <div
+                      key={label}
+                      className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-slate-900/70 px-3 py-2"
+                    >
+                      <span className="text-slate-400">{label}</span>
+                      <span
+                        className={`max-w-[55%] truncate text-right font-semibold ${
+                          label === 'CCTV Status' || label === 'AI Visitor Counting'
+                            ? `rounded-full border px-2 py-0.5 ${badgeClassForStatus(value as 'Yes' | 'No' | 'Unknown')}`
+                            : 'text-white'
+                        }`}
+                        title={String(value)}
+                      >
+                        {formatOptional(value)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {selectedPark.smartParkNote && selectedPark.smartParkNote !== '-' && (
+                  <p className="mt-3 rounded-xl border border-amber-300/20 bg-amber-300/10 px-3 py-2 text-xs leading-5 text-amber-50">
+                    {selectedPark.smartParkNote}
+                  </p>
+                )}
+              </div>
+            </motion.aside>
+          )}
+        </AnimatePresence>
       </div>
 
       <p className="flex items-center gap-2 border-t border-white/10 bg-slate-950/60 px-4 py-2 text-xs leading-5 text-cyan-50">
