@@ -1,6 +1,6 @@
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import mapboxgl from 'mapbox-gl';
-import { Check, Info, Layers, LocateFixed, RotateCcw } from 'lucide-react';
+import { Check, ImageIcon, Info, Layers, LocateFixed, RotateCcw, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ParkRecord } from '../types/park';
 import { validateParkLocation } from '../utils/gisValidation';
@@ -43,6 +43,7 @@ type ParkFeatureProperties = {
   dmtIntegrationScope: string;
   gisValidationStatus: string;
   gisValidationReason: string;
+  parkImageUrl: string;
   markerColor: MarkerColor;
   isNeedsGisReview: boolean;
 };
@@ -120,102 +121,16 @@ function markerColorForCctv(status: ParkRecord['hasCctvSystem']): MarkerColor {
 
 function badgeClassForStatus(status: 'Yes' | 'No' | 'Unknown', warningForNo = false): string {
   if (status === 'Yes') {
-    return 'popup-badge popup-badge-green';
+    return 'border-emerald-300/25 bg-emerald-300/10 text-emerald-50';
   }
 
   if (status === 'No') {
-    return warningForNo ? 'popup-badge popup-badge-amber' : 'popup-badge popup-badge-red';
+    return warningForNo
+      ? 'border-amber-300/25 bg-amber-300/10 text-amber-50'
+      : 'border-red-300/25 bg-red-400/10 text-red-50';
   }
 
-  return 'popup-badge popup-badge-gray';
-}
-
-function createPopupRow(label: string, value: string | HTMLElement): HTMLElement {
-  const row = document.createElement('div');
-  row.className = 'popup-row';
-
-  const labelElement = document.createElement('span');
-  labelElement.className = 'popup-row-label';
-  labelElement.textContent = label;
-  row.appendChild(labelElement);
-
-  if (typeof value === 'string') {
-    const valueElement = document.createElement('span');
-    valueElement.className = 'popup-row-value';
-    valueElement.textContent = value;
-    row.appendChild(valueElement);
-  } else {
-    row.appendChild(value);
-  }
-
-  return row;
-}
-
-function createStatusBadge(value: ParkRecord['hasCctvSystem'] | ParkRecord['hasMaintenanceContract'], warningForNo = false): HTMLElement {
-  const badge = document.createElement('span');
-  badge.className = badgeClassForStatus(value, warningForNo);
-  badge.textContent = value;
-  return badge;
-}
-
-function createPopupContent(park: ParkFeatureProperties): HTMLElement {
-  const container = document.createElement('div');
-  container.className = 'executive-map-popup text-left text-sm';
-
-  const title = document.createElement('h3');
-  title.className = 'popup-title';
-  title.textContent = park.parkName;
-  container.appendChild(title);
-
-  const subtitle = document.createElement('p');
-  subtitle.className = 'popup-subtitle';
-  subtitle.textContent = `${park.municipality} / ${formatOptional(park.region)}`;
-  container.appendChild(subtitle);
-
-  if (park.isSmartPark) {
-    const smartBadge = document.createElement('span');
-    smartBadge.className = 'popup-smart-badge';
-    smartBadge.textContent = 'Confirmed Smart Park';
-    container.appendChild(smartBadge);
-  }
-
-  if (park.isNeedsGisReview) {
-    const warningBadge = document.createElement('span');
-    warningBadge.className = 'popup-warning-badge';
-    warningBadge.textContent = 'Needs GIS Review';
-    container.appendChild(warningBadge);
-  }
-
-  const rows = document.createElement('div');
-  rows.className = 'popup-rows';
-  rows.appendChild(createPopupRow('Marker Type', 'Park'));
-  rows.appendChild(createPopupRow('CCTV Status', createStatusBadge(park.hasCctvSystem)));
-  rows.appendChild(createPopupRow('Total Cameras', formatNumber(park.totalCameras)));
-  rows.appendChild(createPopupRow('Maintenance', createStatusBadge(park.hasMaintenanceContract, true)));
-  rows.appendChild(createPopupRow('Smart Park', park.isSmartPark ? createStatusBadge('Yes') : '-'));
-  rows.appendChild(createPopupRow('DMT Integration', park.isSmartPark ? 'Integrated' : 'Not confirmed'));
-  rows.appendChild(createPopupRow('Camera Setup', 'Standalone'));
-
-  if (park.isSmartPark) {
-    rows.appendChild(createPopupRow('Capabilities', formatOptional(park.smartParkCapabilities)));
-    rows.appendChild(createPopupRow('AI Visitor Counting', park.aiVisitorCountingAvailable ? 'Yes' : 'No'));
-    rows.appendChild(
-      createPopupRow(
-        'AI Visitor Cameras',
-        typeof park.aiVisitorCountingCameraCount === 'number' ? formatNumber(park.aiVisitorCountingCameraCount) : '-',
-      ),
-    );
-    if (park.smartParkNote) {
-      rows.appendChild(createPopupRow('Note', park.smartParkNote));
-    }
-  }
-
-  if (park.isNeedsGisReview) {
-    rows.appendChild(createPopupRow('GIS Review Reason', formatOptional(park.gisValidationReason)));
-  }
-
-  container.appendChild(rows);
-  return container;
+  return 'border-slate-300/20 bg-slate-300/10 text-slate-100';
 }
 
 function buildParkFeatureCollection(parks: PlottedPark[]): ParkFeatureCollection {
@@ -250,6 +165,7 @@ function buildParkFeatureCollection(parks: PlottedPark[]): ParkFeatureCollection
           dmtIntegrationScope: formatOptional(park.dmtIntegrationScope),
           gisValidationStatus: formatOptional(park.gisValidationStatus),
           gisValidationReason: formatOptional(park.gisValidationReason),
+          parkImageUrl: formatOptional(park.parkImageUrl),
           markerColor: needsReview ? 'orange' : markerColorForCctv(park.hasCctvSystem),
           isNeedsGisReview: needsReview,
         },
@@ -341,7 +257,6 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
   const shouldReduceMotion = useReducedMotion();
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
-  const popupRef = useRef<mapboxgl.Popup | null>(null);
   const parkDataRef = useRef<ParkFeatureCollection>(emptyFeatureCollection);
   const showSmartParkIndicatorsRef = useRef(true);
   const [activeStyle, setActiveStyle] = useState(defaultMapStyle);
@@ -354,6 +269,7 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
   const [isStyleMenuOpen, setIsStyleMenuOpen] = useState(false);
   const [isLegendOpen, setIsLegendOpen] = useState(false);
   const [mapNotice, setMapNotice] = useState('');
+  const [selectedPark, setSelectedPark] = useState<ParkFeatureProperties | null>(null);
 
   const mapReadyParks = useMemo(() => parks.filter(isValidUaeCoordinate), [parks]);
   const needsReviewCount = useMemo(() => mapReadyParks.filter(isNeedsGisReview).length, [mapReadyParks]);
@@ -491,23 +407,13 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
           return;
         }
 
-        const coordinates = feature.geometry.coordinates as [number, number];
         const properties = feature.properties as ParkFeatureProperties | undefined;
 
         if (!properties) {
           return;
         }
 
-        popupRef.current?.remove();
-        popupRef.current = new mapboxgl.Popup({
-          closeButton: true,
-          closeOnClick: true,
-          maxWidth: '300px',
-          offset: 14,
-        })
-          .setLngLat(coordinates)
-          .setDOMContent(createPopupContent(properties))
-          .addTo(map);
+        setSelectedPark(properties);
       });
 
       map.on('mouseenter', parksCirclesLayerId, () => {
@@ -531,8 +437,6 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
       window.clearTimeout(resizeTimeout);
       window.removeEventListener('resize', handleWindowResize);
       resizeObserver.disconnect();
-      popupRef.current?.remove();
-      popupRef.current = null;
       map.remove();
       mapRef.current = null;
     };
@@ -568,8 +472,113 @@ export default function ExecutiveMapboxMap({ parks }: ExecutiveMapboxMapProps) {
               <p className="mt-2 text-sm leading-7">
                 Mapbox token is missing. Please add VITE_MAPBOX_TOKEN to the .env file.
               </p>
-            </div>
-          </div>
+        </div>
+
+        <AnimatePresence>
+          {selectedPark && (
+            <motion.aside
+              className="pointer-events-auto absolute bottom-4 right-4 top-40 z-20 flex w-[min(360px,calc(100%-2rem))] flex-col overflow-hidden rounded-2xl border border-white/10 bg-slate-950/90 shadow-2xl shadow-black/40 backdrop-blur md:top-20"
+              initial={shouldReduceMotion ? false : { opacity: 0, x: 18 }}
+              animate={shouldReduceMotion ? undefined : { opacity: 1, x: 0 }}
+              exit={shouldReduceMotion ? undefined : { opacity: 0, x: 18 }}
+              transition={{ duration: 0.18 }}
+              aria-label="Park details"
+            >
+              <div className="flex items-start justify-between gap-3 border-b border-white/10 px-4 py-3">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-cyan-200">Park Details</p>
+                  <h3 className="mt-1 truncate text-base font-semibold text-white" title={selectedPark.parkName}>
+                    {selectedPark.parkName}
+                  </h3>
+                  <p className="mt-1 truncate text-xs text-slate-400">
+                    {selectedPark.municipality} / {formatOptional(selectedPark.region)}
+                  </p>
+                </div>
+                <button
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-slate-300 transition hover:border-cyan-300/40 hover:text-white"
+                  type="button"
+                  onClick={() => setSelectedPark(null)}
+                  aria-label="Close park details"
+                  title="Close"
+                >
+                  <X className="h-4 w-4" aria-hidden="true" />
+                </button>
+              </div>
+
+              <div className="overflow-y-auto p-4">
+                {selectedPark.parkImageUrl && selectedPark.parkImageUrl !== '-' ? (
+                  <img
+                    className="aspect-video w-full rounded-xl border border-white/10 object-cover"
+                    src={selectedPark.parkImageUrl}
+                    alt={`${selectedPark.parkName} park`}
+                    onError={(event) => {
+                      event.currentTarget.style.display = 'none';
+                    }}
+                  />
+                ) : (
+                  <div className="flex aspect-video w-full items-center justify-center rounded-xl border border-white/10 bg-gradient-to-br from-slate-800 via-slate-900 to-cyan-950/60 text-slate-300">
+                    <div className="text-center">
+                      <ImageIcon className="mx-auto h-8 w-8 text-cyan-100/70" aria-hidden="true" />
+                      <p className="mt-2 text-sm font-semibold">Park Image</p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {selectedPark.isSmartPark && (
+                    <span className="rounded-full border border-violet-300/25 bg-violet-300/10 px-2.5 py-1 text-xs font-semibold text-violet-50">
+                      Confirmed Smart Park
+                    </span>
+                  )}
+                  {selectedPark.isNeedsGisReview && (
+                    <span className="rounded-full border border-orange-300/25 bg-orange-300/10 px-2.5 py-1 text-xs font-semibold text-orange-50">
+                      Needs GIS Review
+                    </span>
+                  )}
+                </div>
+
+                <div className="mt-4 grid gap-2 text-xs">
+                  {[
+                    ['Municipality', selectedPark.municipality],
+                    ['Region', selectedPark.region],
+                    ['Park Type', selectedPark.parkType],
+                    ['CCTV Status', selectedPark.hasCctvSystem],
+                    ['Total Cameras', formatNumber(selectedPark.totalCameras)],
+                    ['Smart Park', selectedPark.isSmartPark ? 'Yes' : 'No'],
+                    ['AI Visitor Counting', selectedPark.isSmartPark ? (selectedPark.aiVisitorCountingAvailable ? 'Yes' : 'No') : '-'],
+                    [
+                      'AI Visitor Counting Cameras',
+                      selectedPark.isSmartPark ? formatNumber(selectedPark.aiVisitorCountingCameraCount) : '-',
+                    ],
+                    ['DMT Integration', selectedPark.isSmartPark ? 'Integrated' : 'Not confirmed'],
+                    ['GIS Status', selectedPark.gisValidationStatus],
+                  ].map(([label, value]) => (
+                    <div key={label} className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-slate-900/70 px-3 py-2">
+                      <span className="text-slate-400">{label}</span>
+                      <span
+                        className={`max-w-[55%] truncate text-right font-semibold ${
+                          label === 'CCTV Status' || label === 'AI Visitor Counting'
+                            ? `rounded-full border px-2 py-0.5 ${badgeClassForStatus(value as 'Yes' | 'No' | 'Unknown')}`
+                            : 'text-white'
+                        }`}
+                        title={String(value)}
+                      >
+                        {formatOptional(value)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {selectedPark.smartParkNote && selectedPark.smartParkNote !== '-' && (
+                  <p className="mt-3 rounded-xl border border-amber-300/20 bg-amber-300/10 px-3 py-2 text-xs leading-5 text-amber-50">
+                    {selectedPark.smartParkNote}
+                  </p>
+                )}
+              </div>
+            </motion.aside>
+          )}
+        </AnimatePresence>
+      </div>
         )}
 
         <div className="pointer-events-none absolute left-4 top-4 z-10 rounded-lg border border-white/10 bg-slate-950/80 px-3 py-2 text-xs text-slate-200 shadow-lg shadow-black/25 backdrop-blur">

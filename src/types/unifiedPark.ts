@@ -6,6 +6,7 @@ export interface UnifiedParkRecord {
   parkNameEn?: string;
   region?: string;
   parkType?: string;
+  parkImageUrl?: string;
 
   sourceSheet?: string;
   sourceRowNumber?: number;

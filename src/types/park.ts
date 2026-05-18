@@ -9,6 +9,7 @@ export interface ParkRecord {
   parkType?: string;
   parkClassification?: string;
   supervisorEntity?: string;
+  parkImageUrl?: string;
   locationText?: string;
   coordinateRaw?: string;
   coordinateSource?:

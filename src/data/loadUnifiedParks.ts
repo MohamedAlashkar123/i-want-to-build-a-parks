@@ -77,6 +77,7 @@ export function unifiedParkToParkRecord(record: UnifiedParkRecord): ParkRecord {
     parkName: record.parkName,
     region: record.region,
     parkType: record.parkType,
+    parkImageUrl: record.parkImageUrl,
     coordinateRaw:
       record.xCoord !== undefined && record.yCoord !== undefined ? `${record.xCoord}, ${record.yCoord}` : undefined,
     coordinateSource: record.coordinateSource as ParkRecord['coordinateSource'],
