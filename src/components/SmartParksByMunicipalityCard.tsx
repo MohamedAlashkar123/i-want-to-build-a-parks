@@ -50,7 +50,7 @@ export default function SmartParksByMunicipalityCard({ parks, isLoading = false,
         {[
           ['AI Visitor Counting Parks', visitorCountingParks],
           ['AI Visitor Counting Cameras', visitorCountingCameras],
-          ['Without Visitor Counting', withoutAiVisitorCounting],
+          ['Without AI Visitor Counting', withoutAiVisitorCounting],
         ].map(([label, value]) => (
           <div key={label} className="rounded-xl border border-white/10 bg-slate-950/70 p-3">
             <p className="text-xs text-slate-500">{label}</p>

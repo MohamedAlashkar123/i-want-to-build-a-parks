@@ -16887,5 +16887,32 @@
       "Invalid camera count",
       "Missing or invalid GIS coordinates"
     ]
+  },
+  {
+    "id": "confirmed-smart-park-ADM-corniche-park",
+    "municipality": "ADM",
+    "parkName": "Corniche Park",
+    "parkNameAr": "حديقة الكورنيش",
+    "parkNameEn": "Corniche Park",
+    "latitude": 24.467,
+    "longitude": 54.3289,
+    "coordinateSource": "Confirmed Smart Park GPS",
+    "coordinateStatus": "Ready for Map",
+    "canPlotOnMap": true,
+    "isSmartPark": true,
+    "smartParkCapabilities": [
+      "Sensors",
+      "Smart sensor management system"
+    ],
+    "dmtIntegrationStatus": "Integrated",
+    "aiVisitorCountingAvailable": false,
+    "aiVisitorCountingCameraCount": 0,
+    "smartParkNote": "No CCTV visitor counting cameras",
+    "gisMatchStatus": "Manual",
+    "gisMatchScore": 1,
+    "gisMatchedName": "Corniche Park",
+    "dataQualityIssues": [
+      "Confirmed smart park added from project-team list; not matched to Excel inventory record"
+    ]
   }
 ]

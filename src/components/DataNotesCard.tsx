@@ -10,7 +10,7 @@ export default function DataNotesCard() {
       <ul className="grid list-disc gap-x-8 gap-y-1.5 pl-4 text-xs leading-5 text-slate-300 marker:text-cyan-300 md:grid-cols-2">
         <li>Confirmed smart parks are based on project-team confirmation and provided coordinates.</li>
         <li>AI visitor counting camera data is available for 5 of the 6 confirmed smart parks.</li>
-        <li>Corniche Park is confirmed smart but has no CCTV visitor counting cameras.</li>
+        <li>Corniche Beach is a confirmed smart park and is integrated with DMT systems, but it has no CCTV visitor counting cameras.</li>
         <li>No crowd detection, vandalism detection, facial recognition, or other AI capabilities are included.</li>
         <li>No operational camera status or actual coverage percentage is available.</li>
         <li>Available X/Y coordinates are converted for map visualization using UTM Zone 40N and remain subject to final GIS validation.</li>

@@ -1,20 +1,24 @@
 {
   "totalExcelRecords": 597,
+  "totalUnifiedRecords": 598,
   "totalGisRecords": 601,
   "matchedToGis": 301,
   "unmatchedToGis": 296,
-  "readyForMap": 479,
+  "manualSmartParkRecords": 1,
+  "readyForMap": 480,
   "missingCoordinates": 118,
-  "smartParks": 5,
+  "smartParks": 6,
+  "dmtIntegratedSmartParks": 6,
   "aiVisitorCountingParks": 5,
+  "smartParksWithoutAiVisitorCounting": 1,
   "aiVisitorCountingCameras": 202,
   "byMunicipality": {
     "ADM": {
-      "total": 251,
+      "total": 252,
       "matchedToGis": 166,
-      "readyForMap": 190,
+      "readyForMap": 191,
       "missingCoordinates": 61,
-      "smartParks": 2
+      "smartParks": 3
     },
     "AAM": {
       "total": 225,

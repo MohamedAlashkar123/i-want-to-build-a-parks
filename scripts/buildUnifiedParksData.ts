@@ -3,6 +3,11 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { excelFileName } from '../src/data/loadExcel';
+import {
+  confirmedSmartParks,
+  normalizeSmartParkMatchText,
+  type ConfirmedSmartPark,
+} from '../src/data/confirmedSmartParks';
 import type { GisParkRecord } from '../src/data/loadGisParks';
 import { normalizeWorkbookToParks } from '../src/data/normalizeParks';
 import type { UnifiedParkRecord } from '../src/types/unifiedPark';
@@ -144,23 +149,88 @@ function buildUnifiedPointsGeoJson(records: UnifiedParkRecord[]): GeoJSON.Featur
   };
 }
 
-function buildSummary(records: UnifiedParkRecord[], gisParks: GisParkRecord[]) {
+function toManualSmartParkRecord(smartPark: ConfirmedSmartPark): UnifiedParkRecord {
+  const hasCoordinates = typeof smartPark.latitude === 'number' && typeof smartPark.longitude === 'number';
+
+  return {
+    id: `confirmed-smart-park-${smartPark.municipality}-${smartPark.smartParkNameEn.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+    municipality: smartPark.municipality,
+    parkName: smartPark.smartParkNameEn,
+    parkNameAr: smartPark.smartParkNameAr,
+    parkNameEn: smartPark.smartParkNameEn,
+    latitude: smartPark.latitude,
+    longitude: smartPark.longitude,
+    coordinateSource: hasCoordinates ? 'Confirmed Smart Park GPS' : 'Missing',
+    coordinateStatus: hasCoordinates ? 'Ready for Map' : 'Missing',
+    canPlotOnMap: hasCoordinates,
+    isSmartPark: true,
+    smartParkCapabilities: smartPark.capabilities,
+    dmtIntegrationStatus: smartPark.dmtIntegrationStatus,
+    aiVisitorCountingAvailable: smartPark.aiVisitorCountingAvailable,
+    aiVisitorCountingCameraCount: smartPark.aiVisitorCountingCameraCount,
+    smartParkNote: smartPark.smartParkNote,
+    gisMatchStatus: 'Manual',
+    gisMatchScore: 1,
+    gisMatchedName: smartPark.smartParkNameEn,
+    dataQualityIssues: ['Confirmed smart park added from project-team list; not matched to Excel inventory record'],
+  };
+}
+
+function addMissingConfirmedSmartParks(records: UnifiedParkRecord[]): UnifiedParkRecord[] {
+  const existingSmartParkRecords = records.filter((record) => record.isSmartPark);
+  const smartParkAliases = (smartPark: ConfirmedSmartPark) =>
+    [smartPark.smartParkNameEn, smartPark.smartParkNameAr, ...smartPark.aliases]
+      .filter((alias): alias is string => Boolean(alias))
+      .map(normalizeSmartParkMatchText);
+
+  const missingSmartParks = confirmedSmartParks.filter((smartPark) => {
+    const aliases = smartParkAliases(smartPark);
+
+    return !existingSmartParkRecords.some((record) => {
+      if (record.municipality !== smartPark.municipality) {
+        return false;
+      }
+
+      const recordNames = [record.parkName, record.parkNameAr, record.parkNameEn, record.gisMatchedName]
+        .filter((name): name is string => Boolean(name))
+        .map(normalizeSmartParkMatchText);
+
+      return recordNames.some((recordName) =>
+        aliases.some((alias) => recordName === alias || recordName.includes(alias) || alias.includes(recordName)),
+      );
+    });
+  });
+
+  return [...records, ...missingSmartParks.map(toManualSmartParkRecord)];
+}
+
+function buildSummary(records: UnifiedParkRecord[], gisParks: GisParkRecord[], totalExcelRecords: number) {
   const matchedToGis = records.filter((record) => record.gisMatchStatus === 'Matched').length;
   const readyForMap = records.filter((record) => record.canPlotOnMap).length;
   const smartParks = records.filter((record) => record.isSmartPark).length;
-  const aiVisitorCountingParks = records.filter((record) => record.aiVisitorCountingAvailable).length;
+  const dmtIntegratedSmartParks = records.filter((record) => record.isSmartPark && record.dmtIntegrationStatus === 'Integrated').length;
+  const aiVisitorCountingParks = records.filter(
+    (record) => record.isSmartPark && record.aiVisitorCountingAvailable === true && (record.aiVisitorCountingCameraCount ?? 0) > 0,
+  ).length;
+  const smartParksWithoutAiVisitorCounting = records.filter(
+    (record) => record.isSmartPark && (!record.aiVisitorCountingAvailable || (record.aiVisitorCountingCameraCount ?? 0) === 0),
+  ).length;
   const aiVisitorCountingCameras = records.reduce((total, record) => total + (record.aiVisitorCountingCameraCount ?? 0), 0);
   const municipalities: Municipality[] = ['ADM', 'AAM', 'DRM', 'Unknown'];
 
   return {
-    totalExcelRecords: records.length,
+    totalExcelRecords,
+    totalUnifiedRecords: records.length,
     totalGisRecords: gisParks.length,
     matchedToGis,
-    unmatchedToGis: records.length - matchedToGis,
+    unmatchedToGis: records.filter((record) => record.gisMatchStatus === 'Unmatched').length,
+    manualSmartParkRecords: records.filter((record) => record.gisMatchStatus === 'Manual').length,
     readyForMap,
     missingCoordinates: records.length - readyForMap,
     smartParks,
+    dmtIntegratedSmartParks,
     aiVisitorCountingParks,
+    smartParksWithoutAiVisitorCounting,
     aiVisitorCountingCameras,
     byMunicipality: municipalities.reduce(
       (summary, municipality) => {
@@ -184,9 +254,9 @@ async function main() {
 
   const excelParks = await loadExcelParks();
   const gisParks = await loadGisParksFromFile();
-  const unifiedParks = enrichParksWithGis(excelParks, gisParks);
+  const unifiedParks = addMissingConfirmedSmartParks(enrichParksWithGis(excelParks, gisParks));
   const unifiedPoints = buildUnifiedPointsGeoJson(unifiedParks);
-  const summary = buildSummary(unifiedParks, gisParks);
+  const summary = buildSummary(unifiedParks, gisParks, excelParks.length);
 
   await writeFile(path.join(dataDir, 'parks_unified.json'), `${JSON.stringify(unifiedParks, null, 2)}\n`, 'utf8');
   await writeFile(path.join(dataDir, 'parks_unified_points.geojson'), `${JSON.stringify(unifiedPoints, null, 2)}\n`, 'utf8');

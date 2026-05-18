@@ -12369,6 +12369,28 @@
         "gisMatchStatus": "Unmatched",
         "gisMatchScore": 0
       }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          54.3289,
+          24.467
+        ]
+      },
+      "properties": {
+        "id": "confirmed-smart-park-ADM-corniche-park",
+        "municipality": "ADM",
+        "parkName": "Corniche Park",
+        "parkNameAr": "حديقة الكورنيش",
+        "parkNameEn": "Corniche Park",
+        "isSmartPark": true,
+        "coordinateSource": "Confirmed Smart Park GPS",
+        "coordinateStatus": "Ready for Map",
+        "gisMatchStatus": "Manual",
+        "gisMatchScore": 1
+      }
     }
   ]
 }
